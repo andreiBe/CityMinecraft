@@ -1,0 +1,5 @@
+# Project exclude paths
+/CommonData/target/
+/LAS/target/
+/OpenStreetMap/target/
+/target/
