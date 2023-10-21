@@ -15,14 +15,20 @@ public class OsmEndPoint {
     private final LandUseReader landUseReader;
     private final RoadReader roadReader;
     private final WaterwayReader waterWayReader;
+    private final String landUsePath;
+    private final String roadsPath;
+    private final String waterwaysPath;
 
-    public OsmEndPoint(OpenStreetMapSettings settings) {
+    public OsmEndPoint(OpenStreetMapSettings settings, String landUsePath, String roadsPath, String waterwaysPath) {
         this.settings = settings;
         this.landUseReader = new LandUseReader(settings::getLandUseInfo);
         this.roadReader = new RoadReader(settings::getRoadInfo);
         this.waterWayReader = new WaterwayReader(settings::getWaterwayInfo);
+        this.landUsePath = landUsePath;
+        this.roadsPath = roadsPath;
+        this.waterwaysPath = waterwaysPath;
     }
-    public void addOsmFeatures(Blocks blocks, String landUsePath, String roadsPath, String waterwaysPath) throws IOException {
+    public void addOsmFeatures(Blocks blocks) throws IOException {
         try {
             var landUseList = settings.isAddLandUse() ? landUseReader.read(landUsePath) : null;
             var roadList = settings.isAddRoads() ? roadReader.read(roadsPath) : null;

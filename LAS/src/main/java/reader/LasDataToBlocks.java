@@ -3,12 +3,15 @@ package reader;
 import blocks.Blocks;
 import data.Block;
 import data.Classification;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class LasDataToBlocks {
     private final BlockSupplier supplier;
+    private static final Logger LOGGER = LogManager.getLogger(LasDataToBlocks.class);
 
     public LasDataToBlocks(BlockSupplier supplier) {
         this.supplier = supplier;
@@ -21,14 +24,17 @@ public class LasDataToBlocks {
         Blocks create(int w, int l, int h, int x, int y, int z);
     }
     public Blocks convert(LasReader.LazData data, BlockMaker maker) {
+        LOGGER.info("Starting to convert las data to minecraft blocks."
+        + "MinX: " + data.minXCord() + " MinY: " + data.minYCord() + " MinZ: " + data.minZCord());
+
         Blocks blocks = maker.create(data.width(), data.length(), data.height(), data.minXCord(), data.minYCord(), data.minZCord());
         int lx=0; int ly=0; int lz=0;
         //a single block can contain multiple points with different classifications, so we need to choose one of them
         //the final classification of the block is selected based on this map
         //the more points of a specific classification, the likelier it is that that classification is chosen
         HashMap<Classification, Integer> clAmount = new HashMap<>();
-
-        //the points will be sorted so points inside one block will be after one another
+        int numberOfBlocks = 0;
+        //the points are sorted so points inside one block will be after one another
         LasReader.LazPoint[] points = data.points();
         for (int i = 0; i < points.length; i++) {
             LasReader.LazPoint point = points[i];
@@ -37,6 +43,7 @@ public class LasDataToBlocks {
                 Block block = correctBlock(clAmount);
                 if (block != null) {
                     blocks.set(lx, ly, lz, block);
+                    numberOfBlocks++;
                 }
                 clAmount.clear();
             }
@@ -47,12 +54,15 @@ public class LasDataToBlocks {
             ly = point.y;
             lz = point.z;
         }
+        int fillPercentage = (int) (100* numberOfBlocks / (double)(blocks.getWidth()* blocks.getLength()* blocks.getHeight()));
+        LOGGER.info("Las data has been converted to minecraft blocks. Block count: " + numberOfBlocks
+        + " Fill percentage: " + fillPercentage +"%");
         return blocks;
     }
 
     private Block correctBlock(Map<Classification, Integer> clAmount) {
         Classification mostMatches = null; //the classification of the final block
-        int sum = 0; //sum of points inside the block
+        int sum = 0; //number of points inside the block
         for (Classification cl : clAmount.keySet()) {
             if (mostMatches == null) mostMatches = cl;
             int bestScore = clAmount.get(mostMatches) * Classification.importance(mostMatches);

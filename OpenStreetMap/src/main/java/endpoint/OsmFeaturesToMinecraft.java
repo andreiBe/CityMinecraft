@@ -6,7 +6,7 @@ import blocks.Item;
 import data.Block;
 import data.Classification;
 import landUse.LandUse;
-import landUse.LandUseType;
+import types.LandUseType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import roads.Road;

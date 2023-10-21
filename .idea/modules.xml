@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/CommonData/CommonData.iml" filepath="$PROJECT_DIR$/CommonData/CommonData.iml" />
+      <module fileurl="file://$PROJECT_DIR$/LAS/LAS.iml" filepath="$PROJECT_DIR$/LAS/LAS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Main/Main.iml" filepath="$PROJECT_DIR$/Main/Main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MinecraftSchematic/MinecraftSchematic.iml" filepath="$PROJECT_DIR$/MinecraftSchematic/MinecraftSchematic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/OpenStreetMap/OpenStreetMap.iml" filepath="$PROJECT_DIR$/OpenStreetMap/OpenStreetMap.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TurkuMine.iml" filepath="$PROJECT_DIR$/TurkuMine.iml" />
+      <module fileurl="file://$PROJECT_DIR$/WorldDecorator/WorldDecorator.iml" filepath="$PROJECT_DIR$/WorldDecorator/WorldDecorator.iml" />
+    </modules>
+  </component>
+</project>

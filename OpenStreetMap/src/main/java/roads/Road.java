@@ -2,6 +2,7 @@ package roads;
 
 import data.Block;
 import endpoint.Feature;
+import types.RoadType;
 
 import java.awt.*;
 

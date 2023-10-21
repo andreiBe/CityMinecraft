@@ -3,6 +3,7 @@ package landUse;
 
 import data.Block;
 import endpoint.Feature;
+import types.LandUseType;
 
 import java.awt.*;
 

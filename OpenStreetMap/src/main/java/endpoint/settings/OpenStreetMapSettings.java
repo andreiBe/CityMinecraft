@@ -1,8 +1,8 @@
 package endpoint.settings;
 
-import landUse.LandUseType;
-import roads.RoadType;
-import waterways.WaterWayType;
+import types.LandUseType;
+import types.RoadType;
+import types.WaterWayType;
 
 import java.util.HashMap;
 

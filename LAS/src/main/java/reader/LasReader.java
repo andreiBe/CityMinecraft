@@ -4,12 +4,16 @@ import com.github.mreutegg.laszip4j.LASHeader;
 import com.github.mreutegg.laszip4j.LASPoint;
 import com.github.mreutegg.laszip4j.LASReader;
 import data.Classification;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.function.Predicate;
 
 public class LasReader {
+    private static final Logger LOGGER = LogManager.getLogger(LasReader.class);
+
     private static final int MINIMUM_WATER_BLOCKS_TO_FILL = 1000;
     private final ClassificationSupplier supplier;
     private final Predicate<Classification> classificationIgnore;
@@ -55,6 +59,7 @@ public class LasReader {
     }
 
     public LazData read(String filePath) {
+        LOGGER.info("Las reader starting to read!");
         long start = System.currentTimeMillis();
         LASReader reader = new LASReader(new File(filePath));
         //LASHeader header = LASReader.getHeader(new FileInputStream(filePath));
@@ -64,7 +69,7 @@ public class LasReader {
         int minX = Integer.MAX_VALUE; int maxX = Integer.MIN_VALUE;
         int minY = Integer.MAX_VALUE; int maxY = Integer.MIN_VALUE;
         int minZ = Integer.MAX_VALUE; int maxZ = Integer.MIN_VALUE;
-        ArrayList<LazPoint> points = new ArrayList<>(1_000_000);
+        ArrayList<LazPoint> points = new ArrayList<>((int)header.getNumberOfPointRecords());
         //LASReader.getPoints(new FileInputStream(filePath))
         for (LASPoint point : reader.getPoints()) {
             Classification classification = this.supplier.get(point.getClassification());
@@ -122,7 +127,6 @@ public class LasReader {
             }
         }
         int waterLevel = waterblocks > MINIMUM_WATER_BLOCKS_TO_FILL ? (int)(waterlevelsum/waterblocks) : -1;
-        long mid = System.currentTimeMillis();
         //sorting the points so equal points will be next to each other
         points.sort((p1, p2) -> {
             if (p1.x == p2.x) {
@@ -134,8 +138,8 @@ public class LasReader {
             return Integer.compare(p1.x, p2.x);
         });
         long end = System.currentTimeMillis();
-
-        System.out.println((mid - start) / (double) (end - start));
+        LOGGER.info("Reading LAS-points finished. Time: " + (end-start) +"ms Points: " + points.size()
+        + " Original number of points " + header.getNumberOfPointRecords());
         return new LazData(
                 minXCord, minYCord, minZCord, points.toArray(LazPoint[]::new), width, length, height, waterLevel
         );

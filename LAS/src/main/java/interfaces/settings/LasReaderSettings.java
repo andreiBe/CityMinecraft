@@ -16,6 +16,8 @@ public class LasReaderSettings {
 
     private final Classification[] ignoredClassifications;
 
+    private final boolean useOctTree;
+
     private<K,V> HashMap<K,V> checkNotNull(HashMap<K,V> map, String name) {
         if (map == null) throw new NullPointerException(name + " cannot be null!");
         for (K key : map.keySet()) {
@@ -35,20 +37,29 @@ public class LasReaderSettings {
         }
         return new HashMap<>(map);
     }
-    public LasReaderSettings(HashMap<Integer, Classification> classificationMapping, HashMap<Classification, Block> blockMapping, Classification[] ignoredClassifications) {
+    public LasReaderSettings(HashMap<Integer, Classification> classificationMapping, HashMap<Classification, Block> blockMapping, Classification[] ignoredClassifications, boolean useOctTree) {
         if (ignoredClassifications == null) ignoredClassifications = new Classification[0];
+        this.useOctTree = useOctTree;
         this.ignoredClassifications = Arrays.copyOf(ignoredClassifications,ignoredClassifications.length);
         this.classificationMapping = checkNotNull(classificationMapping, "Classification map");
         this.blockMapping = checkContainsAllEntries(blockMapping, classificationMapping.values().toArray(Classification[]::new), "Block map");
     }
 
     public Classification mapToClassification(int classificationNumber) {
-        return classificationMapping.get(classificationNumber);
+        Classification classification = classificationMapping.get(classificationNumber);
+        if (classification == null) {
+            throw new IllegalArgumentException("No valid classification for number: " + classificationNumber);
+        }
+        return classification;
     }
     public Block mapToBlock(Classification classification) {
         return blockMapping.get(classification);
     }
     public boolean classificationShouldBeIgnored(Classification classification) {
         return Arrays.asList(ignoredClassifications).contains(classification);
+    }
+
+    public boolean useOctTree() {
+        return useOctTree;
     }
 }

@@ -4,6 +4,7 @@ import data.Block;
 import endpoint.FeatureReader;
 import endpoint.settings.LandUseInfo;
 import org.locationtech.jts.geom.Coordinate;
+import types.LandUseType;
 
 import java.awt.*;
 import java.util.Arrays;

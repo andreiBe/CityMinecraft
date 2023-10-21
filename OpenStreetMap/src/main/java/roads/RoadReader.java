@@ -7,6 +7,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.geotools.api.referencing.FactoryException;
 import org.geotools.api.referencing.operation.TransformException;
+import types.RoadType;
+
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;

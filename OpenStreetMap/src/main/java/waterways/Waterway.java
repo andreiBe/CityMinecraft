@@ -2,6 +2,7 @@ package waterways;
 
 
 import endpoint.Feature;
+import types.WaterWayType;
 
 import java.awt.*;
 

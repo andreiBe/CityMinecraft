@@ -6,15 +6,18 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="CommonData" />
-        <module name="OpenStreetMap" />
-        <module name="LAS" />
       </profile>
       <profile name="NoChecks" />
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="CommonData" target="17" />
       <module name="Data" target="17" />
+      <module name="LAS" target="17" />
       <module name="Main" target="17" />
+      <module name="MinecraftSchematic" target="17" />
+      <module name="OpenStreetMap" target="17" />
+      <module name="TurkuMine" target="17" />
+      <module name="WorldDecorator" target="17" />
     </bytecodeTargetLevel>
   </component>
 </project>

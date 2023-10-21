@@ -24,6 +24,9 @@ public class GroundLayer {
             }
         }
     }
+    public boolean inRange(int x, int y) {
+        return x >= 0 && x < width && y >= 0 && y < length;
+    }
 
     public int getWidth() {
         return width;
@@ -37,5 +40,9 @@ public class GroundLayer {
     }
     public Item getItem(int x, int y) {
         return ground[x][y];
+    }
+
+    public int getHeightAt(int x, int y) {
+        return ground[x][y].z;
     }
 }

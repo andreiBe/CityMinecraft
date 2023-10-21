@@ -97,13 +97,13 @@ public class FeatureFilterer {
 
         FileDataStore dataStore = new ShapefileDataStore(file.toURI().toURL());
 
-        CoordinateReferenceSystem sourceCRS = CRS.decode(options.osmCoordinateSystem);
-        CoordinateReferenceSystem targetCRS = CRS.decode(options.targetCoordinateSystem); //canada 2953, finland? 3130
+        CoordinateReferenceSystem sourceCRS = CRS.decode(options.osmCoordinateSystem, true);
+        CoordinateReferenceSystem targetCRS = CRS.decode(options.targetCoordinateSystem, true); //canada 2953, finland? 3130
         MathTransform transform = CRS.findMathTransform(sourceCRS, targetCRS);
         GeometryBuilder geoBuilder = new GeometryBuilder();
         //23450000,6693000, 23469000,6730500
         BoundingBox bBox = options.boundingBox;
-        Polygon box = geoBuilder.box(bBox.minX(),bBox.minY(),  bBox.maxX(),bBox.minY());
+        Polygon box = geoBuilder.box(bBox.minX(),bBox.minY(),  bBox.maxX(),bBox.maxY());
 
         SimpleFeatureSource source = dataStore.getFeatureSource();
         Filter filter = Filter.INCLUDE;
@@ -115,20 +115,21 @@ public class FeatureFilterer {
                 SimpleFeature feature = featureIterator.next();
                 Geometry geometry = (Geometry) feature.getDefaultGeometry();
                 Coordinate[] coordinates = geometry.getCoordinates();
-
                 for (Coordinate value : coordinates) {
-                    Coordinate coordinate = new Coordinate(value);
-                    coordinate = JTS.transform(coordinate, null, transform);
-                    value.x = coordinate.x;
-                    value.y = coordinate.y; //Double.parseDouble("23"+coordinate.y);
+                    JTS.transform(value, value, transform);
                 }
-                if (!this.inBounds(geometry, box)) continue;
+                if (!this.inBounds(geometry, box)) {
+                    continue;
+                }
                 featureCollection.add(feature);
             }
         } finally {
             dataStore.dispose();
         }
-        LOGGER.debug("Saving to " + exportFolderPath);
+        LOGGER.debug("Saving to " + exportFolderPath + ". Number of features: " + featureCollection.size());
+        if (featureCollection.size() == 0) {
+            throw new IllegalArgumentException("0 features inside the boundaries");
+        }
         exportToShapefile(featureCollection, featureCollection.getSchema().getTypeName(), new File(exportFolderPath));
     }
 

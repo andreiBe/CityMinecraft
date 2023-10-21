@@ -4,6 +4,7 @@ import endpoint.FeatureReader;
 import endpoint.settings.WaterwayInfo;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import types.WaterWayType;
 
 import java.awt.*;
 import java.util.Arrays;

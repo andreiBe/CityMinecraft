@@ -1,18 +1,16 @@
 package blocks;
 
 import data.Block;
+import data.BlockSerializer;
+import data.Classification;
+import data.Serializer;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
-public class ArrayBlocks implements Blocks {
+public class ArrayBlocks extends Blocks {
     private final byte[] blocks; //minecraft blocks
     private final HashMap<Block, Byte> ids = new HashMap<>();
     private final Block[] pallet = new Block[256];
-
-    private final int width, length, height;
-    private final int minX, minY, minZ;
 
     @Override
     public Iterator<Item> iterator() {
@@ -20,12 +18,7 @@ public class ArrayBlocks implements Blocks {
     }
 
     public ArrayBlocks(int width, int length, int height, int minX, int minY, int minZ) {
-        this.width = width;
-        this.length = length;
-        this.height = height;
-        this.minX = minX;
-        this.minY = minY;
-        this.minZ = minZ;
+        super(width, length, height, minX, minY, minZ);
         this.blocks = new byte[width*length*height];
     }
     private int pos(int x, int y, int z) {
@@ -46,7 +39,8 @@ public class ArrayBlocks implements Blocks {
 
     @Override
     public boolean remove(int x, int y, int z) {
-        throw new RuntimeException("Not implemented");
+        this.blocks[pos(x,y,z)] = 0;
+        return true;
     }
 
     @Override
@@ -54,9 +48,6 @@ public class ArrayBlocks implements Blocks {
         return width * length * height;
     }
 
-    private boolean inRange(int x, int y, int z) {
-        return x >= 0 && y >= 0 && z >= 0 && x < this.width && y < this.length && z < this.height;
-    }
     public Block get(int x, int y, int z) {
         if (!inRange(x,y,z)) {
             return null;
@@ -65,32 +56,14 @@ public class ArrayBlocks implements Blocks {
     }
 
     @Override
-    public GroundLayer getGroundLayer() {
-        return null;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getLength() {
-        return length;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getMinX() {
-        return minX;
-    }
-
-    public int getMinY() {
-        return minY;
-    }
-
-    public int getMinZ() {
-        return minZ;
+    public void forEach(BlockAction action) {
+        for (int x = 0; x < this.width; x++) {
+            for (int y = 0; y < this.length; y++) {
+                for (int z = 0; z < this.height; z++) {
+                    action.run(x,y,z, this.pallet[pos(x,y,z)]);
+                }
+            }
+        }
     }
 
     public static class XYZIterator implements Iterator<Item> {
@@ -135,5 +108,82 @@ public class ArrayBlocks implements Blocks {
             advance();
             return this.item;
         }
+    }
+
+    public static class ArrayBlockSerializer extends BlockSerializer {
+        @Override
+        public ArrayBlocks deserialize(byte[] ar) {
+            int[] ints = readInts(ar, 0, 6);
+            int width, length, height, minX, minY, minZ;
+            width = ints[0];
+            length = ints[1];
+            height = ints[2];
+            minX = ints[3];
+            minY = ints[4];
+            minZ = ints[5];
+            ArrayBlocks blocks = new ArrayBlocks(width, length, height, minX, minY, minZ);
+            int i = 6 * 4;
+            for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
+                byte id = ar[i];
+                byte data = ar[i+1];
+                Classification classification = Classification.values()[ar[i+2]];
+                blocks.pallet[palletIndex] = new Block(id, data, classification);
+                i+=3;
+            }
+            for (int x = 0; x < blocks.width; x++) {
+                for (int y = 0; y < blocks.length; y++) {
+                    for (int z = 0; z < blocks.height; z++) {
+                        int index = (z * blocks.length + y) * blocks.width + x;
+                        index += i;
+                        byte block = ar[index];
+                        blocks.blocks[blocks.pos(x,y,z)] = block;
+                    }
+                }
+            }
+            return blocks;
+        }
+        @Override
+        public byte[] serialize(Blocks blocksUnknown) {
+            ArrayBlocks blocks = (ArrayBlocks) blocksUnknown;
+            // 6 * 4 = width, length, height, minX, minY, minZ as bytes
+            //the palette takes 256*3 bytes
+            //it takes 1 byte to represent a block
+
+            byte[] serialized = new byte[6*4 + blocks.pallet.length * 3 + blocks.width * blocks.length * blocks.height];
+            writeInts(serialized, 0, blocks.width, blocks.length, blocks.height, blocks.minX, blocks.minY, blocks.minZ);
+            int i = 6*4;
+            for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
+                Block block = blocks.pallet[palletIndex];
+                if (block == null) continue;
+                serialized[i] = block.id();
+                serialized[i+1] = block.data();
+                serialized[i+2] = (byte) Classification.index(block.classification());
+                i+=3;
+            }
+            for (int x = 0; x < blocks.width; x++) {
+                for (int y = 0; y < blocks.length; y++) {
+                    for (int z = 0; z < blocks.height; z++) {
+                        int index = (z * blocks.length + y) * blocks.width + x;
+                        index += i;
+                        byte block = blocks.blocks[blocks.pos(x,y,z)];
+                        serialized[index] = block;
+                    }
+                }
+            }
+            return serialized;
+        }
+    }
+
+    @Override
+    public Blocks.BlockData getBlockData() {
+        byte[] blocks = new byte[this.width*this.length*this.height];
+        byte[] data = new byte[blocks.length];
+        for (int i = 0; i < blocks.length; i++) {
+            Block block = pallet[blocks[i]];
+            if (block == null) continue;
+            blocks[i] = block.id();
+            data[i] = block.data();
+        }
+        return new Blocks.BlockData(blocks, data, (short) this.length, (short) this.width, (short) this.height, minX, minY, minZ);
     }
 }
