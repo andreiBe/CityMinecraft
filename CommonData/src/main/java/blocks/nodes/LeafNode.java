@@ -1,6 +1,6 @@
 package blocks.nodes;
 
-import blocks.Item;
+import blocks.XYZBlock;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -40,14 +40,14 @@ public class LeafNode extends Node{
     }
 
     @Override
-    public boolean groundLayer(Item[][] groundModel, BlockConverter converter) {
+    public boolean groundLayer(XYZBlock[][] groundModel, BlockConverter converter) {
         int sum = 0;
         for (int x = 0; x < this.width; x++) {
             for (int y = 0; y < this.length; y++) {
                 for (int z = this.height-1; z >= 0; z--) {
                     byte block = this.blocks[localPos(x,y,z)];
                     if (block != 0) {
-                        groundModel[x+minX][y+minY] = new Item(x+minX, y+minX, z+minZ, converter.convert(block));
+                        groundModel[x+minX][y+minY] = new XYZBlock(x+minX, y+minX, z+minZ, converter.convert(block));
                         break;
                     }
                 }
@@ -57,13 +57,26 @@ public class LeafNode extends Node{
     }
 
     @Override
+    public void forEachSet(SetByteAction action) {
+        for (int x = 0; x < this.width; x++) {
+            for (int y = 0; y < this.length; y++) {
+                for (int z = 0; z < this.height; z++) {
+                    int pos = localPos(x,y,z);
+                    if (this.blocks[pos] != 0)
+                        blocks[pos] = action.get(minX + x, minY + y,minZ + z);
+                }
+            }
+        }
+    }
+
+    @Override
     public void forEach(ByteAction action) {
         for (int x = 0; x < this.width; x++) {
             for (int y = 0; y < this.length; y++) {
                 for (int z = 0; z < this.height; z++) {
                     int pos = localPos(x,y,z);
                     if (this.blocks[pos] != 0)
-                        action.run(x,y,z,this.blocks[pos]);
+                        action.run(minX + x, minY + y,minZ + z,this.blocks[pos]);
                 }
             }
         }

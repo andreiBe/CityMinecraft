@@ -2,7 +2,7 @@ package endpoint;
 
 import blocks.Blocks;
 import blocks.GroundLayer;
-import blocks.Item;
+import blocks.XYZBlock;
 import data.Block;
 import data.Classification;
 import landUse.LandUse;
@@ -96,14 +96,14 @@ public class OsmFeaturesToMinecraft {
     private void fillWater(int xo, int yo, GroundLayer groundLayer) {
         int radius = 5;
         int minZ = Integer.MAX_VALUE;
-        ArrayList<Item> bottomLayer = new ArrayList<>();
-        ArrayList<Item> noGround = new ArrayList<>();
+        ArrayList<XYZBlock> bottomLayer = new ArrayList<>();
+        ArrayList<XYZBlock> noGround = new ArrayList<>();
         for (int x = xo-radius; x <= xo+radius; x++) {
             for (int y = yo-radius; y <= yo+radius; y++) {
                 if (x < 0 || y < 0 || x >= groundLayer.getWidth() || y >= groundLayer.getLength()) continue;
-                Item i = groundLayer.getItem(x,y);
+                XYZBlock i = groundLayer.getItem(x,y);
                 if (i == null) {
-                    noGround.add(new Item(x,y, minZ, null));
+                    noGround.add(new XYZBlock(x,y, minZ, null));
                     continue;
                 }
                 if (i.z() < minZ) {
@@ -116,8 +116,8 @@ public class OsmFeaturesToMinecraft {
             }
         }
         bottomLayer.addAll(noGround);
-        for (Item item : bottomLayer) {
-            blocks.set(item.x(), item.y(), minZ+1, new Block((byte) 22, (byte) 0, Classification.WATER));
+        for (XYZBlock XYZBlock : bottomLayer) {
+            blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, new Block((byte) 22, (byte) 0, Classification.WATER));
         }
     }
     private void applyRoads() {
@@ -166,14 +166,14 @@ public class OsmFeaturesToMinecraft {
         }
     }
     private void removeBuiltAreaAroundRoad(int xo, int yo, GroundLayer groundLayer, Road[][] roads) {
-        ArrayList<Item> built = new ArrayList<>();
+        ArrayList<XYZBlock> built = new ArrayList<>();
         int total = 0;
         int nature = 0;
         int radius = 5;
         for (int x = xo-radius; x <= xo+radius; x++) {
             for (int y = yo-radius; y <= yo+radius; y++) {
                 if (x < 0 || y < 0 || x >= groundLayer.getWidth() || y >= groundLayer.getLength()) continue;
-                Item i = groundLayer.getItem(x,y);
+                XYZBlock i = groundLayer.getItem(x,y);
                 Block block = i.block();
                 if (roads[x][y] != null) continue;
                 if (block.id() == 1) built.add(i);
@@ -182,8 +182,8 @@ public class OsmFeaturesToMinecraft {
             }
         }
         if (nature < total/1.5) return;
-        for (Item item : built) {
-            blocks.set(item, new Block((byte) 2, (byte) 0, Classification.GROUND));
+        for (XYZBlock XYZBlock : built) {
+            blocks.set(XYZBlock, new Block((byte) 2, (byte) 0, Classification.GROUND));
         }
     }
     private int averageGroundHeight( int x1, int y1, int x2, int y2) {

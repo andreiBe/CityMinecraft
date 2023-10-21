@@ -1,7 +1,7 @@
 package fixer;
 
 import blocks.Blocks;
-import blocks.Item;
+import blocks.XYZBlock;
 import data.Block;
 import data.Classification;
 import org.apache.logging.log4j.LogManager;
@@ -48,18 +48,18 @@ public class BlockDataFixer {
     private void removeFloatingBuildings() {
         LOGGER.debug("Removing floating building blocks");
         int amount = 0;
-        for (Item item : this.blocks) {
-            Classification classification = item.block().classification();
+        for (XYZBlock XYZBlock : this.blocks) {
+            Classification classification = XYZBlock.block().classification();
             if (classification != Classification.BUILDING) continue;
             if (
                     //The building block is floating with no other building blocks connected to it
-                    this.blocks.numberOfNeighboringBlocksWithClassification(item,classification) <= 1
+                    this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock,classification) <= 1
                     //The block has very few other building blocks nearby
-                    || blocks.numberOfBlocksWithClassificationInRadius(item,classification,3) < 6
-                    || this.hasBlocksOfAirBelow(item.x(), item.y(), item.z(), 20)
+                    || blocks.numberOfBlocksWithClassificationInRadius(XYZBlock,classification,3) < 6
+                    || this.hasBlocksOfAirBelow(XYZBlock.x(), XYZBlock.y(), XYZBlock.z(), 20)
             ) {
                 amount++;
-                this.blocks.remove(item);
+                this.blocks.remove(XYZBlock);
             }
 
         }
@@ -70,14 +70,14 @@ public class BlockDataFixer {
         LOGGER.debug("Removing floating plants and unknown blocks");
         int amount = 0;
         //Removing plants and unknown blocks that have two or less plant neighbours
-        for (Item item : this.blocks) {
-            Classification cf = item.block().classification();
+        for (XYZBlock XYZBlock : this.blocks) {
+            Classification cf = XYZBlock.block().classification();
             //if a plant has less than three plants next to it, it is removed
-            if ((cf.isPlant() && this.blocks.numberOfNeighboringBlocksWithClassification(item, cf) < 3)
+            if ((cf.isPlant() && this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock, cf) < 3)
                     //if a block classified as unknown has less than two other unknown blocks next to it
                     //then it is removed
-                    || (cf == Classification.UNKNOWN && this.blocks.numberOfNeighboringBlocksWithClassification(item, cf) <= 1)) {
-                this.blocks.remove(item);
+                    || (cf == Classification.UNKNOWN && this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock, cf) <= 1)) {
+                this.blocks.remove(XYZBlock);
                 amount++;
             }
         }
@@ -88,12 +88,12 @@ public class BlockDataFixer {
     private void extendBuildings() {
         LOGGER.debug("Extending buildings to the ground");
         int amount = 0;
-        for (Item item : this.blocks) {
-            Classification cf = item.block().classification();
+        for (XYZBlock XYZBlock : this.blocks) {
+            Classification cf = XYZBlock.block().classification();
             if (cf == Classification.BUILDING
-                    && this.blocks.numberOfNeighboringBlocksWithClassification(item, cf) >= 2) {
-                for (int z = item.z(); z >= 0; z--) {
-                    this.blocks.set(item.x(), item.y(), z, item.block());
+                    && this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock, cf) >= 2) {
+                for (int z = XYZBlock.z(); z >= 0; z--) {
+                    this.blocks.set(XYZBlock.x(), XYZBlock.y(), z, XYZBlock.block());
                     amount++;
                 }
             }
@@ -104,20 +104,20 @@ public class BlockDataFixer {
     private void removePlantsAndUnknownBlocksNearBuildings() {
         int amount = 0;
         LOGGER.debug("Removing plants and unknown blocks near buildings");
-        for (Item item : this.blocks) {
-            Classification cf = item.block().classification();
+        for (XYZBlock XYZBlock : this.blocks) {
+            Classification cf = XYZBlock.block().classification();
             if (!cf.isPlant() && cf != Classification.UNKNOWN) continue;
             //comparing the number of building blocks nearby with the number of blocks that
             //have the same classification as the block in question (plant or unknown)
 
-            int similarBlocksNearby = this.blocks.numberOfBlocksWithClassificationInRadius(item,cf, 4);
-            int buildingNeighbors = this.blocks.numberOfBlocksWithClassificationInRadius(item, Classification.BUILDING, 2);
+            int similarBlocksNearby = this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock,cf, 4);
+            int buildingNeighbors = this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock, Classification.BUILDING, 2);
             if (similarBlocksNearby > buildingNeighbors) continue;
             if (buildingNeighbors >= 7) {
-                blocks.set(item, this.buildingBlock);
+                blocks.set(XYZBlock, this.buildingBlock);
                 amount++;
             } else if (buildingNeighbors >= 3) {
-                blocks.remove(item);
+                blocks.remove(XYZBlock);
                 amount++;
             }
         }
@@ -128,15 +128,15 @@ public class BlockDataFixer {
     private void mergeUnknownBlocksToPlants() {
         LOGGER.debug("Merging unknown blocks to plants");
         int amount = 0;
-        for (Item item : this.blocks) {
-            Classification cf = item.block().classification();
+        for (XYZBlock XYZBlock : this.blocks) {
+            Classification cf = XYZBlock.block().classification();
             if (cf != Classification.UNKNOWN) continue;
-            if (this.blocks.numberOfBlocksWithClassificationInRadius(item, cf, 3) > 10) continue;
-            List<Item> neighbors = this.blocks.neighborsList(item);
+            if (this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock, cf, 3) > 10) continue;
+            List<XYZBlock> neighbors = this.blocks.neighborsList(XYZBlock);
             if (neighbors.isEmpty()) continue;
-            for (Item neighbor : neighbors) {
+            for (XYZBlock neighbor : neighbors) {
                 if (neighbor.block().classification().isPlant()) {
-                    this.blocks.set(item, neighbor.block());
+                    this.blocks.set(XYZBlock, neighbor.block());
                     amount++;
                     break;
                 }
@@ -144,15 +144,15 @@ public class BlockDataFixer {
         }
         LOGGER.debug("Changed " + amount + " blocks");
     }
-    private void addIfNull(List<Item> list, int x, int y, Item[][] ground) {
+    private void addIfNull(List<XYZBlock> list, int x, int y, XYZBlock[][] ground) {
         if (x < 0 || y < 0 || x >= ground.length || y >= ground[0].length) {
             return;
         }
         if (ground[x][y].block() != null) return;
         list.add(ground[x][y]);
     }
-    private List<Item> nullNeighbors(int x, int y, Item[][] ground) {
-        ArrayList<Item> ret = new ArrayList<>(4);
+    private List<XYZBlock> nullNeighbors(int x, int y, XYZBlock[][] ground) {
+        ArrayList<XYZBlock> ret = new ArrayList<>(4);
         addIfNull(ret, x-1, y, ground);
         addIfNull(ret, x+1, y, ground);
         addIfNull(ret, x, y-1, ground);
@@ -160,22 +160,22 @@ public class BlockDataFixer {
         return ret;
     }
     private void fillInGround() {
-        Item[][] ground = blocks.getGroundLayerIncomplete();
-        PriorityQueue<Item> edges = new PriorityQueue<>(Comparator.comparingInt(Item::z));
+        XYZBlock[][] ground = blocks.getGroundLayerIncomplete();
+        PriorityQueue<XYZBlock> edges = new PriorityQueue<>(Comparator.comparingInt(XYZBlock::z));
         for (int x = 0; x < blocks.getWidth(); x++) {
             for (int y = 0; y < blocks.getLength(); y++) {
-                List<Item> nullNeighbors = nullNeighbors(x, y, ground);
+                List<XYZBlock> nullNeighbors = nullNeighbors(x, y, ground);
                 if (!nullNeighbors.isEmpty()) edges.add(ground[x][y]);
             }
         }
         while (!edges.isEmpty()) {
-            Item edge = edges.poll();
-            List<Item> nullNeighbors = nullNeighbors(edge.x(), edge.y(), ground);
-            for (Item nullNeighbor : nullNeighbors) {
-                Item newItem = new Item(nullNeighbor.x(), nullNeighbor.y(), nullNeighbor.z(), edge.block());
-                ground[nullNeighbor.x()][nullNeighbor.y()] = newItem;
-                blocks.set(newItem, edge.block());
-                edges.add(newItem);
+            XYZBlock edge = edges.poll();
+            List<XYZBlock> nullNeighbors = nullNeighbors(edge.x(), edge.y(), ground);
+            for (XYZBlock nullNeighbor : nullNeighbors) {
+                XYZBlock newXYZBlock = new XYZBlock(nullNeighbor.x(), nullNeighbor.y(), nullNeighbor.z(), edge.block());
+                ground[nullNeighbor.x()][nullNeighbor.y()] = newXYZBlock;
+                blocks.set(newXYZBlock, edge.block());
+                edges.add(newXYZBlock);
             }
         }
     }
@@ -211,11 +211,11 @@ public class BlockDataFixer {
             this.classification = classification;
         }
 
-        public Coordinate(Item item) {
-            this.x = item.x();
-            this.y = item.y();
-            this.z = item.z();
-            this.classification = item.block().classification();
+        public Coordinate(XYZBlock XYZBlock) {
+            this.x = XYZBlock.x();
+            this.y = XYZBlock.y();
+            this.z = XYZBlock.z();
+            this.classification = XYZBlock.block().classification();
         }
 
         @Override
@@ -249,7 +249,7 @@ public class BlockDataFixer {
         int amount = 0;
         HashSet<Coordinate> visited = new HashSet<>();
         Queue<Coordinate> q = new ArrayDeque<>();
-        for (Item block : blocks) {
+        for (XYZBlock block : blocks) {
             if (block.block().classification() != Classification.WATER) continue;
 //            Block blockBelow = blocks.get(block.x, block.y, block.z-1);
 //            if (blockBelow != null && blockBelow.getClassification() == Classification.WATER) return;

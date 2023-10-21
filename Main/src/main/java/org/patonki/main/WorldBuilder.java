@@ -77,23 +77,23 @@ public class WorldBuilder {
         Executor executor = new Executor(lazFile, this.startStep, this.endStep, this.cacheFolderPath, this.serializer);
 
         LOGGER.info("World builder starting...");
-        executor.exec(() -> LASEndPoint.convertLazDataToBlocks(lazFile), ExecutionStep.READ_LAS);
+        executor.execStart(() -> LASEndPoint.convertLazDataToBlocks(lazFile), ExecutionStep.READ_LAS);
         LOGGER.info("Las points have been calculated!");
-        executor.exec(LASEndPoint::fixProblemsWithLASData, ExecutionStep.FIX_LAS);
+        executor.execStart(LASEndPoint::fixProblemsWithLASData, ExecutionStep.FIX_LAS);
         LOGGER.info("Problems with the LAS data have been fixed!");
-        executor.exec(osmEndPoint::addOsmFeatures, ExecutionStep.OSM);
+        executor.execStart(osmEndPoint::addOsmFeatures, ExecutionStep.OSM);
         LOGGER.info("Osm features have been added!");
-        executor.exec(decorator::decorate, ExecutionStep.DECORATE);
+        executor.execStart(decorator::decorate, ExecutionStep.DECORATE);
         LOGGER.info("Additional decorations have been added!");
 
-        executor.exec((blocks) -> {
+        executor.execStart((blocks) -> {
             Blocks.BlockData data = blocks.getBlockData();
             schematicCreator.writeSchematic(getSchematicFileName(blocks, schematicsFolder),
                     data.blockIds(), data.blockData(), data.width(), data.length(), data.height());
         }, ExecutionStep.SCHEMATIC);
         LOGGER.info("Schematic has been written!");
 
-        executor.exec(blocks -> {
+        executor.execStart(blocks -> {
             worldWriter.writeSchematicToWorld(getSchematicFileName(blocks, schematicsFolder), templateMinecraftWorldPath);
         }, ExecutionStep.MINECRAFT_WORLD);
         LOGGER.info("Schematic has been written to the minecraft world!");

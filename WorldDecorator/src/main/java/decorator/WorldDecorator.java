@@ -2,7 +2,7 @@ package decorator;
 
 import blocks.Blocks;
 import blocks.GroundLayer;
-import blocks.Item;
+import blocks.XYZBlock;
 import data.Block;
 import data.Classification;
 import org.apache.logging.log4j.LogManager;
@@ -191,14 +191,14 @@ public class WorldDecorator {
         TreePoint[][] treePointTop = new TreePoint[blocks.getWidth()][blocks.getLength()];
         int[][] visited = new int[blocks.getWidth()][blocks.getLength()];
 
-        for (Item item : blocks) {
-            if (!item.block().classification().isPlant()) {
+        for (XYZBlock XYZBlock : blocks) {
+            if (!XYZBlock.block().classification().isPlant()) {
                 continue;
             }
-            TreePoint treePoint = new TreePoint(item.x(), item.y(), item.z());
+            TreePoint treePoint = new TreePoint(XYZBlock.x(), XYZBlock.y(), XYZBlock.z());
 
-            TreePoint currentHighestPoint = treePointTop[item.x()][item.y()];
-            treePointTop[item.x()][item.y()] = (currentHighestPoint == null ? treePoint : ( currentHighestPoint.z > treePoint.z ? currentHighestPoint : treePoint));
+            TreePoint currentHighestPoint = treePointTop[XYZBlock.x()][XYZBlock.y()];
+            treePointTop[XYZBlock.x()][XYZBlock.y()] = (currentHighestPoint == null ? treePoint : ( currentHighestPoint.z > treePoint.z ? currentHighestPoint : treePoint));
             treePoints.add(treePoint);
         }
         //sorting based on height
@@ -280,13 +280,13 @@ public class WorldDecorator {
         GroundLayer groundLayer = blocks.getGroundLayer();
         for (int x = 0; x < groundLayer.getWidth(); x++) {
             for (int y = 0; y < groundLayer.getLength(); y++) {
-                Item item = groundLayer.getItem(x,y);
+                XYZBlock XYZBlock = groundLayer.getItem(x,y);
                 //grass block
-                if (item.block().id() != 2
+                if (XYZBlock.block().id() != 2
                         || rng.nextInt(100) > 40
-                        || !blocks.isAir(item.x(), item.y(), item.z()+1))
+                        || !blocks.isAir(XYZBlock.x(), XYZBlock.y(), XYZBlock.z()+1))
                     continue;
-                blocks.set(item.x(), item.y(), item.z() + 1, getGrassDecoration(rng));
+                blocks.set(XYZBlock.x(), XYZBlock.y(), XYZBlock.z() + 1, getGrassDecoration(rng));
             }
         }
     }

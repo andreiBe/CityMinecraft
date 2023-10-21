@@ -1,6 +1,6 @@
 package blocks.nodes;
 
-import blocks.Item;
+import blocks.XYZBlock;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -58,7 +58,7 @@ public class ParentNode extends Node{
     }
 
     @Override
-    public boolean groundLayer(Item[][] model, BlockConverter converter) {
+    public boolean groundLayer(XYZBlock[][] model, BlockConverter converter) {
         int sum = 0;
         for (int i = 4; i <= 7; i++) {
             Node upperChild = this.children[i];
@@ -81,7 +81,17 @@ public class ParentNode extends Node{
     }
 
     @Override
+    public void forEachSet(SetByteAction action) {
+        if (!populated) return;
+        for (Node child : this.children) {
+            if (child == null) continue;
+            child.forEachSet(action);
+        }
+    }
+
+    @Override
     public void forEach(ByteAction action, BBox box) {
+        if (!populated) return;
         for (Node child : children) {
             if (child == null) continue;
             if (child.inside(box)) {
@@ -103,48 +113,6 @@ public class ParentNode extends Node{
         if (child != null) return child;
 
         return children[i] = childCreators[i].create(this, creator);
-            /*
-            x -= minX;
-            y -= minY;
-            z -= minZ;
-            int childWidth = this.width / 2;
-            int childLength = this.length / 2;
-            int childHeight = this.height / 2;
-            NodeCreator creator;
-            if ((childWidth) * (childLength) * (childHeight) > maxSize) {
-                creator = getParentCreator(maxSize);
-            } else {
-                creator = getLeafCreator();
-            }
-            if (z < childHeight) {
-                //layer 1
-                if (x < childWidth && y < childLength) {
-                    return children[0] = creator.create(minX, minY, minZ, childWidth, childLength, childHeight);
-                }
-                else if (y < childLength) {
-                    return children[1] = creator.create(minX + childWidth, minY, minZ, this.width - childWidth, childLength, childHeight);
-                }
-                else if (x < childWidth) {
-                    return children[2] = creator.create(minX, minY + childLength, minZ, childWidth, this.length - childLength, childHeight);
-                } else {
-                    return children[3] = creator.create(minX + childWidth, minY + childLength, minZ, this.width - childWidth, this.length - childLength, childHeight);
-                }
-            } else {
-                //layer 2
-                if (x < childWidth && y < childLength) {
-                    return children[4] = creator.create(minX, minY, minZ + childHeight, childWidth, childLength, this.height - childHeight);
-                }
-                else if (y < childLength) {
-                    return children[5] = creator.create(minX + childWidth, minY, minZ + childHeight, this.width - childWidth, childLength, this.height - childHeight);
-                }
-                else if (x < childWidth) {
-                    return children[6] = creator.create(minX, minY + childLength, minZ + childHeight, childWidth, this.length - childLength, this.height - childHeight);
-                } else {
-                    return children[7] = creator.create(minX + childWidth, minY + childLength, minZ + childHeight, this.width - childWidth, this.length - childLength, this.height - childHeight);
-                }
-            }
-
-             */
     }
 
     @Override

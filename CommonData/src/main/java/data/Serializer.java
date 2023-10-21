@@ -1,5 +1,9 @@
 package data;
 
+/**
+ * Base class for class serializers contains helper methods
+ * @param <T> The type to serialize
+ */
 public abstract class Serializer<T> {
     public abstract byte[] serialize(T val);
     public abstract T deserialize(byte[] ar);

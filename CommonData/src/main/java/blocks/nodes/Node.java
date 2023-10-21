@@ -1,13 +1,17 @@
 package blocks.nodes;
 
 
-import blocks.Item;
+import blocks.XYZBlock;
 import data.Block;
 
 public abstract class Node implements Iterable<Node.ByteItem>{
     public interface ByteAction {
         void run(int x, int y, int z, byte b);
     }
+    public interface SetByteAction {
+        byte get(int x, int y, int z);
+    }
+
     public interface BlockConverter {
         Block convert(byte b);
     }
@@ -42,11 +46,13 @@ public abstract class Node implements Iterable<Node.ByteItem>{
     public abstract byte get(int x, int y, int z);
     public abstract boolean set(int x, int y, int z, byte block);
     public abstract int size();
-    public abstract boolean groundLayer(Item[][] model, BlockConverter converter);
+    public abstract boolean groundLayer(XYZBlock[][] model, BlockConverter converter);
 
     public abstract void forEach(ByteAction action);
     public record BBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {}
     public abstract void forEach(ByteAction action, BBox box);
+
+    public abstract void forEachSet(SetByteAction action);
 
     public boolean inside(BBox box) {
         return box.maxX() >= minX && box.maxY() >= minY && box.maxZ() >= minZ

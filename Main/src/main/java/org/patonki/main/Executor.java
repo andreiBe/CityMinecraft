@@ -55,7 +55,7 @@ public class Executor {
         this.cacheFolderPath = cacheFolderPath;
         this.serializer = serializer;
     }
-    public void exec(Supplier<Blocks> supplier, ExecutionStep step) throws IOException {
+    public void execStart(Supplier<Blocks> supplier, ExecutionStep step) throws IOException {
         if (startStep.number > step.number || endStep.number < step.number) {
             return;
         }
@@ -74,7 +74,7 @@ public class Executor {
         void handle(Blocks blocks) throws Exception;
     }
 
-    public void exec(BlocksHandler consumer, ExecutionStep step) throws Exception {
+    public void execStart(BlocksHandler consumer, ExecutionStep step) throws Exception {
         if (startStep.number > step.number || endStep.number < step.number) {
             return;
         }

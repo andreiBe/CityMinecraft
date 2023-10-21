@@ -3,20 +3,31 @@ package blocks;
 import data.Block;
 import data.BlockSerializer;
 import data.Classification;
-import data.Serializer;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
+/**
+ * An implementation of {@link Blocks}.
+ * that uses a simple array of blocks. <br>
+ * Because of memory limitations, this class only supports up to 256 (byte max value) different
+ * types of blocks.
+ */
 public class ArrayBlocks extends Blocks {
-    private final byte[] blocks; //minecraft blocks
-    private final HashMap<Block, Byte> ids = new HashMap<>();
     private final Block[] pallet = new Block[256];
+    private final byte[] blocks; //indexes of the block pallet
+    //each block mapped to it's index in the pallet
+    private final HashMap<Block, Byte> ids = new HashMap<>();
 
     @Override
-    public Iterator<Item> iterator() {
+    public Iterator<XYZBlock> iterator() {
         return new XYZIterator(this);
     }
 
+    /**
+     * @see Blocks#Blocks(int, int, int, int, int, int)
+     */
     public ArrayBlocks(int width, int length, int height, int minX, int minY, int minZ) {
         super(width, length, height, minX, minY, minZ);
         this.blocks = new byte[width*length*height];
@@ -26,7 +37,7 @@ public class ArrayBlocks extends Blocks {
     }
     public boolean set(int x, int y, int z, Block block) {
         Byte index = ids.get(block);
-        if (index == null) {
+        if (index == null) { //new block
             byte size = (byte) (ids.size() + 1);
             ids.put(block, size);
             this.pallet[size] = block;
@@ -66,15 +77,18 @@ public class ArrayBlocks extends Blocks {
         }
     }
 
-    public static class XYZIterator implements Iterator<Item> {
+    /**
+     * Iterates over blocks.
+     */
+    public static class XYZIterator implements Iterator<XYZBlock> {
         private final ArrayBlocks blocks;
         private int x,y,z;
 
-        private final Item item;
+        private final XYZBlock XYZBlock;
         public XYZIterator(ArrayBlocks blocks) {
             this.blocks = blocks;
             this.x = -1;
-            this.item = new Item(0,0,0, null);
+            this.XYZBlock = new XYZBlock(0,0,0, null);
             advance();
         }
         @Override
@@ -97,22 +111,31 @@ public class ArrayBlocks extends Blocks {
             }
         }
         @Override
-        public Item next() {
+        public XYZBlock next() {
             if (z >= this.blocks.height)
                 throw new NoSuchElementException();
             //Item item = this.blocks.blocks[x][y][z];
-            this.item.x = x;
-            this.item.y = y;
-            this.item.z = z;
-            this.item.block = this.blocks.pallet[this.blocks.blocks[this.blocks.pos(x,y,z)]];
+            this.XYZBlock.x = x;
+            this.XYZBlock.y = y;
+            this.XYZBlock.z = z;
+            this.XYZBlock.block = this.blocks.pallet[this.blocks.blocks[this.blocks.pos(x,y,z)]];
             advance();
-            return this.item;
+            return this.XYZBlock;
         }
     }
 
+    /**
+     * Enables serialization to and from byte arrays.
+     * Used for caching to a file for later use.
+     */
     public static class ArrayBlockSerializer extends BlockSerializer {
         @Override
         public ArrayBlocks deserialize(byte[] ar) {
+            // 6 * 4 = width, length, height, minX, minY, minZ as bytes
+            //the palette takes 256*3 bytes
+            //it takes 1 byte to represent a block
+
+            //the metadata
             int[] ints = readInts(ar, 0, 6);
             int width, length, height, minX, minY, minZ;
             width = ints[0];
@@ -123,6 +146,7 @@ public class ArrayBlocks extends Blocks {
             minZ = ints[5];
             ArrayBlocks blocks = new ArrayBlocks(width, length, height, minX, minY, minZ);
             int i = 6 * 4;
+            //the block pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 byte id = ar[i];
                 byte data = ar[i+1];
@@ -130,6 +154,7 @@ public class ArrayBlocks extends Blocks {
                 blocks.pallet[palletIndex] = new Block(id, data, classification);
                 i+=3;
             }
+            //the actual blocks
             for (int x = 0; x < blocks.width; x++) {
                 for (int y = 0; y < blocks.length; y++) {
                     for (int z = 0; z < blocks.height; z++) {
@@ -149,9 +174,11 @@ public class ArrayBlocks extends Blocks {
             //the palette takes 256*3 bytes
             //it takes 1 byte to represent a block
 
+            //storing the metadata
             byte[] serialized = new byte[6*4 + blocks.pallet.length * 3 + blocks.width * blocks.length * blocks.height];
             writeInts(serialized, 0, blocks.width, blocks.length, blocks.height, blocks.minX, blocks.minY, blocks.minZ);
             int i = 6*4;
+            //storing the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 Block block = blocks.pallet[palletIndex];
                 if (block == null) continue;
@@ -160,6 +187,7 @@ public class ArrayBlocks extends Blocks {
                 serialized[i+2] = (byte) Classification.index(block.classification());
                 i+=3;
             }
+            //storing the blocks
             for (int x = 0; x < blocks.width; x++) {
                 for (int y = 0; y < blocks.length; y++) {
                     for (int z = 0; z < blocks.height; z++) {

@@ -2,24 +2,29 @@ package blocks;
 
 import data.Block;
 
+/**
+ * Represents the ground surface of an area. <br>
+ * The highest ground point can be retrieved from a (x,y)-coordinate <br>
+ * The ground surface is guaranteed to be filled (no holes).
+ */
 public class GroundLayer {
-    private Item[][] ground;
+    private final XYZBlock[][] ground;
     private final int width;
     private final int length;
 
-    public GroundLayer(Item[][] ground) {
+    public GroundLayer(XYZBlock[][] ground) {
         this.ground = ground;
         this.width = ground.length;
         this.length = ground[0].length;
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < length; y++) {
-                Item item = ground[x][y];
-                if (item == null) {
-                    throw new NullPointerException("Null value found at coordinates: " + x + " " + y);
+                XYZBlock XYZBlock = ground[x][y];
+                if (XYZBlock == null) {
+                    throw new IllegalArgumentException("Null value found at coordinates: " + x + " " + y);
                 }
-                if (item.block == null) {
-                    throw new NullPointerException("Null block found at: " + x + " " + y);
+                if (XYZBlock.block == null) {
+                    throw new IllegalArgumentException("Null block found at: " + x + " " + y);
                 }
             }
         }
@@ -38,7 +43,7 @@ public class GroundLayer {
     public Block getBlock(int x, int y) {
         return ground[x][y].block;
     }
-    public Item getItem(int x, int y) {
+    public XYZBlock getItem(int x, int y) {
         return ground[x][y];
     }
 
