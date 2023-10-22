@@ -1,9 +1,12 @@
+/**
+ * Module for converting LAS (Lidar) data to minecraft blocks
+ */
 module LAS {
-    exports interfaces;
-    exports interfaces.settings;
+    exports org.patonki.las;
+    exports org.patonki.las.settings;
     requires CommonData;
     requires laszip4j;
     requires org.apache.logging.log4j;
 
-    opens interfaces.settings;
+    opens org.patonki.las.settings;
 }

@@ -1,3 +1,6 @@
+/**
+ * Adds land use, road and waterway information to the minecraft block landscape.
+ */
 module OpenStreetMap {
     requires org.geotools.api;
     requires org.geotools.shapefile;
@@ -10,9 +13,9 @@ module OpenStreetMap {
     requires java.desktop;
     requires CommonData;
 
-    exports endpoint;
-    exports endpoint.settings;
-    exports types;
+    exports org.patonki.openstreetmap;
+    exports org.patonki.openstreetmap.settings;
+    exports org.patonki.types;
 
-    opens endpoint.settings;
+    opens org.patonki.openstreetmap.settings;
 }

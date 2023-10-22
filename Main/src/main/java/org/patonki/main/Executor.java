@@ -1,9 +1,9 @@
 package org.patonki.main;
 
-import blocks.Blocks;
-import data.BlockSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.patonki.blocks.Blocks;
+import org.patonki.data.BlockSerializer;
 
 import java.io.File;
 import java.io.FileInputStream;

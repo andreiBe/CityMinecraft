@@ -1,6 +1,6 @@
 package org.patonki.main;
 
-import endpoint.FeatureFilterer;
+import org.patonki.openstreetmap.FeatureFilterer;
 
 import java.io.File;
 import java.io.IOException;

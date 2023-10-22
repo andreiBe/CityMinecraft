@@ -1,8 +1,8 @@
 /**
- * Module that contains classes used by other modules.
+ * Module that contains dataclasses used to represent minecraft data
  */
 module CommonData
 {
-    exports data;
-    exports blocks;
+    exports org.patonki.data;
+    exports org.patonki.blocks;
 }

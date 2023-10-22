@@ -2,7 +2,14 @@
 /CommonData/target/
 /LAS/target/
 /OpenStreetMap/target/
+/WorldDecorator/target/
+/Main/target
+/MinecraftSchematic/target/
 /target/
 
 inputData
+output
 logs
+**/*.iml
+*.iml
+.idea

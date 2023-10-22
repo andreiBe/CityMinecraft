@@ -1,7 +1,7 @@
-import blocks.ArrayBlocks;
-import data.Block;
-import data.Classification;
 import org.junit.jupiter.api.Test;
+import org.patonki.blocks.ArrayBlocks;
+import org.patonki.data.Block;
+import org.patonki.data.Classification;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

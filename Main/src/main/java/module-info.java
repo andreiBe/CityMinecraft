@@ -1,3 +1,6 @@
+/**
+ * The Main module that combines the other modules and creates the final product.
+ */
 module Main {
     requires CommonData;
     requires LAS;
@@ -7,6 +10,11 @@ module Main {
     requires MinecraftSchematic;
     requires WorldDecorator;
     requires jdk.unsupported;
+
+    exports org.patonki.downloader;
+    exports org.patonki.main;
+    exports org.patonki.serialize;
+    exports org.patonki.settings;
 
     opens org.patonki.downloader to com.google.gson;
     opens org.patonki.settings to com.google.gson;

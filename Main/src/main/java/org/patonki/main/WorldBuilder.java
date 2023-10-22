@@ -1,14 +1,14 @@
 package org.patonki.main;
 
-import blocks.ArrayBlocks;
-import blocks.Blocks;
-import blocks.OctTreeBlocks;
-import converter.MinecraftWorldWriter;
-import converter.SchematicCreator;
-import data.BlockSerializer;
-import decorator.WorldDecorator;
-import endpoint.OsmEndPoint;
-import interfaces.LASEndPoint;
+import org.patonki.blocks.ArrayBlocks;
+import org.patonki.blocks.Blocks;
+import org.patonki.blocks.OctTreeBlocks;
+import org.patonki.converter.MinecraftWorldWriter;
+import org.patonki.converter.SchematicCreator;
+import org.patonki.data.BlockSerializer;
+import org.patonki.decorator.WorldDecorator;
+import org.patonki.openstreetmap.OsmEndPoint;
+import org.patonki.las.LASEndPoint;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.patonki.settings.Settings;
@@ -60,10 +60,11 @@ public class WorldBuilder {
             String roadsPath,
             String waterwaysPath) throws Exception {
         MinecraftWorldWriter writer = new MinecraftWorldWriter();
+        writer.copyTemplateWorld(templateMinecraftWorldPath);
         WorldBuilder builder = new WorldBuilder(settings, writer, cacheFolderPath,landUsePath,
                 roadsPath, waterwaysPath, startStep, endStep);
 
-        builder.run(lazFile, schematicsFolder, templateMinecraftWorldPath);
+        builder.run(lazFile, schematicsFolder);
     }
 
     private String getSchematicFileName(Blocks data, String schematicsFolder) {
@@ -72,8 +73,7 @@ public class WorldBuilder {
                 + "_" + data.getWidth() + "_" + data.getLength() + "_" + data.getHeight() + ".schematic";
     }
     private void run(String lazFile,
-                     String schematicsFolder,
-                     String templateMinecraftWorldPath) throws Exception {
+                     String schematicsFolder) throws Exception {
         Executor executor = new Executor(lazFile, this.startStep, this.endStep, this.cacheFolderPath, this.serializer);
 
         LOGGER.info("World builder starting...");
@@ -94,7 +94,7 @@ public class WorldBuilder {
         LOGGER.info("Schematic has been written!");
 
         executor.execStart(blocks -> {
-            worldWriter.writeSchematicToWorld(getSchematicFileName(blocks, schematicsFolder), templateMinecraftWorldPath);
+            worldWriter.writeSchematicToWorld(getSchematicFileName(blocks, schematicsFolder));
         }, ExecutionStep.MINECRAFT_WORLD);
         LOGGER.info("Schematic has been written to the minecraft world!");
 
@@ -121,11 +121,12 @@ public class WorldBuilder {
         ArrayList<Future<?>> futures = new ArrayList<>();
 
         MinecraftWorldWriter writer = new MinecraftWorldWriter();
+        writer.copyTemplateWorld(templateMinecraftWorldPath);
         for (File file : files) {
             String lazFile = file.getAbsolutePath();
             Future<?> future = executor.submit((Callable<Void>) () -> {
                 WorldBuilder builder = new WorldBuilder(settings, writer, cacheFolderPath,landUsePath,roadsPath,waterwaysPath, startStep, endStep);
-                builder.run(lazFile, schematicsFolder, templateMinecraftWorldPath);
+                builder.run(lazFile, schematicsFolder);
                 return null;
             });
             futures.add(future);

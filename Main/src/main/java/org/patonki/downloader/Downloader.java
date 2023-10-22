@@ -1,14 +1,17 @@
 package org.patonki.downloader;
 
-import data.IntBoundingBox;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.patonki.data.IntBoundingBox;
 
 import java.io.*;
 import java.net.URL;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Class used to download the needed data from the internet
+ */
 public class Downloader {
     private final DownloadSettings settings;
 

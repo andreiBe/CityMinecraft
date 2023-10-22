@@ -1,23 +1,23 @@
 package org.patonki.serialize;
 
 import com.google.gson.Gson;
-import data.Block;
-import data.BoundingBox;
-import data.Classification;
-import data.IntBoundingBox;
+import org.patonki.data.Block;
+import org.patonki.data.BoundingBox;
+import org.patonki.data.Classification;
+import org.patonki.data.IntBoundingBox;
 import org.patonki.downloader.Downloader;
-import endpoint.FeatureFilterer;
-import endpoint.settings.LandUseInfo;
-import endpoint.settings.OpenStreetMapSettings;
-import endpoint.settings.RoadInfo;
-import endpoint.settings.WaterwayInfo;
-import interfaces.settings.LasReaderSettings;
-import types.LandUseType;
+import org.patonki.openstreetmap.FeatureFilterer;
+import org.patonki.openstreetmap.settings.LandUseInfo;
+import org.patonki.openstreetmap.settings.OpenStreetMapSettings;
+import org.patonki.openstreetmap.settings.RoadInfo;
+import org.patonki.openstreetmap.settings.WaterwayInfo;
+import org.patonki.las.settings.LasReaderSettings;
+import org.patonki.types.LandUseType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.patonki.settings.Settings;
-import types.RoadType;
-import types.WaterWayType;
+import org.patonki.types.RoadType;
+import org.patonki.types.WaterWayType;
 
 import java.io.File;
 import java.io.FileWriter;

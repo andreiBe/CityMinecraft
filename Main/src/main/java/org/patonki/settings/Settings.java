@@ -1,7 +1,7 @@
 package org.patonki.settings;
 
-import interfaces.settings.LasReaderSettings;
-import endpoint.settings.OpenStreetMapSettings;
+import org.patonki.las.settings.LasReaderSettings;
+import org.patonki.openstreetmap.settings.OpenStreetMapSettings;
 
 
 public class Settings {
