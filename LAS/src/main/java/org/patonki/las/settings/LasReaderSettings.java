@@ -17,6 +17,8 @@ public class LasReaderSettings {
     //for example, all buildings could be iron blocks
     private final HashMap<Classification, Block> blockMapping;
 
+    private final Block roofBlock;
+
     private final Classification[] ignoredClassifications;
 
     private final boolean useOctTree;
@@ -42,13 +44,17 @@ public class LasReaderSettings {
     }
 
     /**
-     * @param classificationMapping Classification integer mapped to the correct classification
-     * @param blockMapping Classification mapped to the minecraft block representing it. (VEGETATION -> leaves)
+     * @param classificationMapping  Classification integer mapped to the correct classification
+     * @param blockMapping           Classification mapped to the minecraft block representing it. (VEGETATION -> leaves)
+     * @param roofBlock              The block that the building roofs will have
      * @param ignoredClassifications Lidar points with these classifications will be ignored
-     * @param useOctTree Whether to use the more memory efficient but slower algorithm
+     * @param useOctTree             Whether to use the more memory efficient but slower algorithm
      */
-    public LasReaderSettings(HashMap<Integer, Classification> classificationMapping, HashMap<Classification, Block> blockMapping, Classification[] ignoredClassifications, boolean useOctTree) {
+    public LasReaderSettings(HashMap<Integer, Classification> classificationMapping, HashMap<Classification, Block> blockMapping, Block roofBlock, Classification[] ignoredClassifications, boolean useOctTree) {
         if (ignoredClassifications == null) ignoredClassifications = new Classification[0];
+        if (roofBlock == null) throw new NullPointerException("Roof block cannot be null!");
+        if (roofBlock.classification() != Classification.BUILDING) throw new NullPointerException("Roof block should be classified as building!");
+        this.roofBlock = roofBlock;
         this.useOctTree = useOctTree;
         this.ignoredClassifications = Arrays.copyOf(ignoredClassifications,ignoredClassifications.length);
         this.classificationMapping = checkNotNull(classificationMapping, "Classification map");
@@ -82,5 +88,9 @@ public class LasReaderSettings {
 
     public boolean useOctTree() {
         return useOctTree;
+    }
+
+    public Block getRoofBlock() {
+        return roofBlock;
     }
 }

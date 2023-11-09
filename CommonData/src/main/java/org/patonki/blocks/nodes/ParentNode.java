@@ -115,6 +115,8 @@ public class ParentNode extends Node{
         return children[i] = childCreators[i].create(this, creator);
     }
 
+
+
     @Override
     public byte get(int x, int y, int z) {
         if (outOfBounds(x, y, z)) return 0;
@@ -132,29 +134,41 @@ public class ParentNode extends Node{
     private class ParentIterator implements Iterator<ByteItem> {
         private int childIndex = 0;
         private Iterator<ByteItem> currentIterator;
-        private void reset() {
+
+        private final Node[] sortedChildren = new Node[8];
+        private void reset(boolean downToUp) {
             if (!populated) return;
             this.childIndex = 0;
-            this.currentIterator = children[childIndex] != null ? children[childIndex].iterator() : null;
+            if (downToUp) {
+                System.arraycopy(children, 0, sortedChildren, 0, children.length);
+            } else {
+                for (int i = 4; i < children.length; i++) {
+                    sortedChildren[i-4] = children[i];
+                }
+                for (int i = 0; i < 4; i++) {
+                    sortedChildren[i+4] = children[i];
+                }
+            }
+            this.currentIterator = sortedChildren[childIndex] != null ? sortedChildren[childIndex].iterator() : null;
             advance();
         }
         private void advance() {
             while (currentIterator == null || !currentIterator.hasNext()) {
                 childIndex++;
-                if (childIndex >= children.length) break;
-                currentIterator = children[childIndex] != null ? children[childIndex].iterator() : null;
+                if (childIndex >= sortedChildren.length) break;
+                currentIterator = sortedChildren[childIndex] != null ? sortedChildren[childIndex].iterator() : null;
             }
         }
         @Override
         public boolean hasNext() {
             if (!populated) return false;
-            if (childIndex >= children.length) return false;
+            if (childIndex >= sortedChildren.length) return false;
             return currentIterator.hasNext();
         }
 
         @Override
         public ByteItem next() {
-            if (childIndex >= children.length)
+            if (childIndex >= sortedChildren.length)
                 throw new NoSuchElementException();
             ByteItem child = currentIterator.next();
             advance();
@@ -164,7 +178,12 @@ public class ParentNode extends Node{
     private final ParentIterator iterator = new ParentIterator();
     @Override
     public Iterator<ByteItem> iterator() {
-        iterator.reset();
+        iterator.reset(true);
+        return iterator;
+    }
+    @Override
+    public Iterator<ByteItem> getIterator(boolean bottomToUp) {
+        iterator.reset(bottomToUp);
         return iterator;
     }
 }

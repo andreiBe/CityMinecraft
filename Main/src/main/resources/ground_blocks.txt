@@ -1,0 +1,21 @@
+group vegetation 1
+grass_block 2 grass_carried
+coarse_dirt 2
+podzol 2 dirt_podzol_top
+sandstone 2 sandstone_normal
+lime_wool 2 wool_colored_lime
+green_wool 2 wool_colored_green
+lime_terracotta 2 hardened_clay_stained_lime
+green_terracotta 2 hardened_clay_stained_green
+lime_concrete 2 concrete_lime
+green_concrete 2 concrete_green
+minecraft:birch_planks 2 planks_birch
+minecraft:oak_planks 2 planks_oak
+
+
+group built 1
+diorite 1:5 stone_diorite
+andesite 1:5 stone_andesite
+cobblestone 1:5
+smooth_stone 1:5 stone_slab_top
+

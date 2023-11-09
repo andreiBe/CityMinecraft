@@ -43,7 +43,7 @@ public class GroundLayer {
     public Block getBlock(int x, int y) {
         return ground[x][y].block;
     }
-    public XYZBlock getItem(int x, int y) {
+    public XYZBlock getXYZBlock(int x, int y) {
         return ground[x][y];
     }
 

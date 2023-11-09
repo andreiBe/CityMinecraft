@@ -1,10 +1,12 @@
 package org.patonki.blocks;
 
+import org.jetbrains.annotations.NotNull;
 import org.patonki.data.Block;
 import org.patonki.data.BlockSerializer;
 import org.patonki.data.Classification;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -22,7 +24,11 @@ public class ArrayBlocks extends Blocks {
 
     @Override
     public Iterator<XYZBlock> iterator() {
-        return new XYZIterator(this);
+        return new XYZIterator(this, true);
+    }
+    @Override
+    public Iterator<XYZBlock> getIterator(boolean bottomToUp) {
+        return new XYZIterator(this, bottomToUp);
     }
 
     /**
@@ -35,7 +41,10 @@ public class ArrayBlocks extends Blocks {
     private int pos(int x, int y, int z) {
         return z * (this.width * this.length) + x*(this.length) + y;
     }
-    public boolean set(int x, int y, int z, Block block) {
+
+    public boolean set(int x, int y, int z, @NotNull Block block) {
+        if (!inRange(x,y,z)) return false;
+
         Byte index = ids.get(block);
         if (index == null) { //new block
             byte size = (byte) (ids.size() + 1);
@@ -71,7 +80,7 @@ public class ArrayBlocks extends Blocks {
         for (int x = 0; x < this.width; x++) {
             for (int y = 0; y < this.length; y++) {
                 for (int z = 0; z < this.height; z++) {
-                    action.run(x,y,z, this.pallet[pos(x,y,z)]);
+                    action.run(x,y,z, this.pallet[this.blocks[pos(x,y,z)]]);
                 }
             }
         }
@@ -85,28 +94,32 @@ public class ArrayBlocks extends Blocks {
         private int x,y,z;
 
         private final XYZBlock XYZBlock;
-        public XYZIterator(ArrayBlocks blocks) {
+
+        private final int zStep;
+        public XYZIterator(ArrayBlocks blocks, boolean bottomToUp) {
             this.blocks = blocks;
             this.x = -1;
             this.XYZBlock = new XYZBlock(0,0,0, null);
+            this.zStep = bottomToUp ? 1 : -1;
+            this.z = bottomToUp ? 0 : blocks.height-1;
             advance();
         }
         @Override
         public boolean hasNext() {
-            return z < this.blocks.height;
+            return z >= 0 && z < this.blocks.height;
         }
         private void advanceCoordinates() {
             x++;
             if (x == this.blocks.width) {
                 x = 0;y++;
                 if (y == this.blocks.length) {
-                    y = 0;z++;
+                    y = 0; z+=zStep;
                 }
             }
         }
         private void advance() {
             advanceCoordinates();
-            while (z < this.blocks.height && this.blocks.blocks[blocks.pos(x,y,z)] == 0) {
+            while (z >= 0 && z < this.blocks.height && this.blocks.blocks[blocks.pos(x,y,z)] == 0) {
                 advanceCoordinates();
             }
         }
@@ -149,19 +162,27 @@ public class ArrayBlocks extends Blocks {
             //the block pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 byte id = ar[i];
-                byte data = ar[i+1];
-                Classification classification = Classification.values()[ar[i+2]];
-                blocks.pallet[palletIndex] = new Block(id, data, classification);
+                if (id == 0) {
+                    blocks.pallet[palletIndex] = null;
+                } else {
+                    byte data = ar[i+1];
+                    Classification classification = Classification.values()[ar[i+2]];
+                    blocks.pallet[palletIndex] = new Block(id, data, classification);
+                }
                 i+=3;
             }
             //the actual blocks
             for (int x = 0; x < blocks.width; x++) {
                 for (int y = 0; y < blocks.length; y++) {
                     for (int z = 0; z < blocks.height; z++) {
-                        int index = (z * blocks.length + y) * blocks.width + x;
+                        int index = blocks.pos(x,y,z);
                         index += i;
                         byte block = ar[index];
                         blocks.blocks[blocks.pos(x,y,z)] = block;
+
+                        Block b = blocks.pallet[block];
+                        if (b != null)
+                            blocks.ids.put(b, block);
                     }
                 }
             }
@@ -181,19 +202,20 @@ public class ArrayBlocks extends Blocks {
             //storing the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 Block block = blocks.pallet[palletIndex];
-                if (block == null) continue;
-                serialized[i] = block.id();
-                serialized[i+1] = block.data();
-                serialized[i+2] = (byte) Classification.index(block.classification());
+                if (block != null) {
+                    serialized[i] = block.id();
+                    serialized[i+1] = block.data();
+                    serialized[i+2] = (byte) Classification.index(block.classification());
+                }
                 i+=3;
             }
             //storing the blocks
             for (int x = 0; x < blocks.width; x++) {
                 for (int y = 0; y < blocks.length; y++) {
                     for (int z = 0; z < blocks.height; z++) {
-                        int index = (z * blocks.length + y) * blocks.width + x;
+                        int index = blocks.pos(x,y,z);
                         index += i;
-                        byte block = blocks.blocks[blocks.pos(x,y,z)];
+                        byte block = blocks.blocks[index];
                         serialized[index] = block;
                     }
                 }
@@ -206,8 +228,8 @@ public class ArrayBlocks extends Blocks {
     public Blocks.BlockData getBlockData() {
         byte[] blocks = new byte[this.width*this.length*this.height];
         byte[] data = new byte[blocks.length];
-        for (int i = 0; i < blocks.length; i++) {
-            Block block = pallet[blocks[i]];
+        for (int i = 0; i < this.blocks.length; i++) {
+            Block block = pallet[this.blocks[i]];
             if (block == null) continue;
             blocks[i] = block.id();
             data[i] = block.data();

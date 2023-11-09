@@ -12,6 +12,7 @@ module OpenStreetMap {
     requires org.apache.logging.log4j;
     requires java.desktop;
     requires CommonData;
+    requires java.sql;
 
     exports org.patonki.openstreetmap;
     exports org.patonki.openstreetmap.settings;

@@ -99,7 +99,7 @@ public class FeatureFilterer {
             read(shapefilePath, exportFolderPath);
         } catch (FactoryException | TransformException e) {
             e.printStackTrace();
-            throw new FilterException("Problem with coordinate conversions");
+            throw new FilterException("Problem with coordinate conversions or other gml problems");
         }
     }
 
@@ -153,6 +153,10 @@ public class FeatureFilterer {
      * @see #readSingle(String, String)
      */
     public void readMany(String[] shapefiles, String exportFolderPath) throws IOException, FilterException {
+        File exportFolder = new File(exportFolderPath);
+        if (!exportFolder.exists()) {
+            exportFolder.mkdirs();
+        }
         for (String shapefile : shapefiles) {
             this.readSingle(shapefile, exportFolderPath);
         }

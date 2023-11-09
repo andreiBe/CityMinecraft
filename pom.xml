@@ -58,6 +58,7 @@
         <module>MinecraftSchematic</module>
         <module>WorldDecorator</module>
         <module>Main</module>
+        <module>CityGml</module>
     </modules>
 
     <dependencies>

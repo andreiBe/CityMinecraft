@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 public class Executor {
@@ -17,10 +18,18 @@ public class Executor {
     private Blocks blocks;
     private final ExecutionStep startStep;
     private final ExecutionStep endStep;
+    private final ExecutionStep[] skipped;
     private final String cacheFolderPath;
     
     private static final Logger LOGGER = LogManager.getLogger(Executor.class);
-
+    public Executor(String lazFile, ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, String cacheFolderPath, BlockSerializer serializer) {
+        this.lazFile = lazFile;
+        this.startStep = start;
+        this.endStep = end;
+        this.skipped = skipped;
+        this.cacheFolderPath = cacheFolderPath;
+        this.serializer = serializer;
+    }
     private File getCacheFile(String lazFile, ExecutionStep step) {
         String withoutExtension = lazFile.substring(0, lazFile.lastIndexOf('.'));
         new File(this.cacheFolderPath+"/"+withoutExtension).mkdirs();
@@ -47,15 +56,13 @@ public class Executor {
             throw e;
         }
     }
-
-    public Executor(String lazFile, ExecutionStep start, ExecutionStep end, String cacheFolderPath, BlockSerializer serializer) {
-        this.lazFile = lazFile;
-        this.startStep = start;
-        this.endStep = end;
-        this.cacheFolderPath = cacheFolderPath;
-        this.serializer = serializer;
+    private boolean isIgnored(ExecutionStep step) {
+        return Arrays.stream(skipped).anyMatch(s -> s == step);
     }
+
     public void execStart(Supplier<Blocks> supplier, ExecutionStep step) throws IOException {
+        if (isIgnored(step)) return;
+
         if (startStep.number > step.number || endStep.number < step.number) {
             return;
         }
@@ -63,18 +70,17 @@ public class Executor {
             this.blocks = getCachedBlocks(lazFile, startStep);
             return;
         }
-        Blocks blocks = supplier.get();
-        this.blocks = blocks;
-        if (endStep == ExecutionStep.READ_LAS) {
+        this.blocks = supplier.get();
+        if (endStep == step) {
             cacheBlocks(lazFile, endStep, blocks);
         }
-        this.blocks = blocks;
     }
     public interface BlocksHandler {
         void handle(Blocks blocks) throws Exception;
     }
 
-    public void execStart(BlocksHandler consumer, ExecutionStep step) throws Exception {
+    public void exec(BlocksHandler consumer, ExecutionStep step) throws Exception {
+        if (isIgnored(step)) return;
         if (startStep.number > step.number || endStep.number < step.number) {
             return;
         }
@@ -83,7 +89,7 @@ public class Executor {
             return;
         }
         consumer.handle(blocks);
-        if (endStep == ExecutionStep.READ_LAS) {
+        if (endStep == step) {
             cacheBlocks(lazFile, endStep, blocks);
         }
     }

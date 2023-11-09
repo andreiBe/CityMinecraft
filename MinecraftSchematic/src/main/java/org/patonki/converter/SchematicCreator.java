@@ -41,6 +41,6 @@ public class SchematicCreator {
         tag.put("'WEOffsetZ'", new IntTag(0));
         tag.put("Entities", new ListTag<>(IntTag.class));
         tag.put("TileEntities", new ListTag<>(IntTag.class));
-        NBTUtil.write(namedTag, filename, true);
+        NBTUtil.write(namedTag, filename, false);
     }
 }

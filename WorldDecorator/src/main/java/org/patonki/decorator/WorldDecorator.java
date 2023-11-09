@@ -25,8 +25,20 @@ public class WorldDecorator {
         Block logBlock = new Block((byte) 17, (byte) 0, Classification.MEDIUM_VEGETATION);
         treeTrunks(blocks, logBlock);
         addGrassCover(blocks);
+        removeStackedGrassBlock(blocks);
         LOGGER.debug("Decoration finished");
     }
+
+    private void removeStackedGrassBlock(Blocks blocks) {
+        Block dirt = new Block(3,0,Classification.GROUND);
+        for (XYZBlock block : blocks) {
+            Block above = blocks.get(block.x(), block.y(), block.z()+1);
+            if (block.block().id() == 2 && (above != null && above.id() == 2)) {
+                blocks.set(block, dirt);
+            }
+        }
+    }
+
     private static abstract class TreePointTree extends TreePoint {
         public TreePointTree(int x, int y, int z) {
             super(x, y, z);
@@ -287,7 +299,7 @@ public class WorldDecorator {
         GroundLayer groundLayer = blocks.getGroundLayer();
         for (int x = 0; x < groundLayer.getWidth(); x++) {
             for (int y = 0; y < groundLayer.getLength(); y++) {
-                XYZBlock XYZBlock = groundLayer.getItem(x,y);
+                XYZBlock XYZBlock = groundLayer.getXYZBlock(x,y);
                 //grass block
                 if (XYZBlock.block().id() != 2
                         || rng.nextInt(100) > 40

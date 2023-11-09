@@ -15,10 +15,16 @@ public class BlockDataFixer {
 
     private final Block buildingBlock;
     private final Block waterBlock;
+    private final Block seaBottomBlock;
+    private final Block unknownBlock;
 
-    public BlockDataFixer(Block buildingBlock, Block waterBlock) {
+    private final Block roofBlock;
+    public BlockDataFixer(Block buildingBlock, Block waterBlock, Block seaBottomBlock, Block unknownBlock, Block roofBlock) {
         this.buildingBlock = buildingBlock;
         this.waterBlock = waterBlock;
+        this.seaBottomBlock = seaBottomBlock;
+        this.unknownBlock = unknownBlock;
+        this.roofBlock = roofBlock;
     }
 
     public void improveData(Blocks blocks) {
@@ -29,20 +35,24 @@ public class BlockDataFixer {
         extendBuildings();
         removePlantsAndUnknownBlocksNearBuildings();
         mergeUnknownBlocksToPlants();
+        randomFixes();
         floodWater();
         fillInGround();
         fillBottom();
     }
 
-    private boolean hasBlocksOfAirBelow(int x, int y, int z, int amount) {
+
+    private boolean hasBlocksOfAirBelow(int x, int y, int z, int amount, Classification[] ignored, boolean falseWhenEndlessAir) {
         int res = 0;
         for (z -= 1; z >= 0; z--) {
-            if (!this.blocks.isAir(x, y, z)) {
+            Block b = this.blocks.get(x, y, z);
+            if (!(b == null || Arrays.stream(ignored).anyMatch(c -> c == b.classification()))) {
                 return res >= amount;
             }
             res++;
         }
-        return false;
+
+        return !falseWhenEndlessAir && res >= amount;
     }
     //the data may have some random floating building blocks
     private void removeFloatingBuildings() {
@@ -56,7 +66,10 @@ public class BlockDataFixer {
                     this.blocks.numberOfNeighboringBlocksWithClassification(block,classification) <= 1
                     //The block has very few other building blocks nearby
                     || blocks.numberOfBlocksWithClassificationInRadius(block,classification,3) < 6
-                    || this.hasBlocksOfAirBelow(block.x(), block.y(), block.z(), 20)
+                    //floating high in the air
+                    || this.hasBlocksOfAirBelow(block.x(), block.y(), block.z(), 20,
+                            new Classification[]{Classification.LOW_VEGETATION, Classification.MEDIUM_VEGETATION,
+                                    Classification.HIGH_VEGETATION, Classification.UNKNOWN}, true)
             ) {
                 amount++;
                 this.blocks.remove(block);
@@ -72,14 +85,20 @@ public class BlockDataFixer {
         //Removing plants and unknown blocks that have two or less plant neighbours
         for (XYZBlock XYZBlock : this.blocks) {
             Classification cf = XYZBlock.block().classification();
+            //if the plant is too far in the skye it should be marked as unknown because it probably isn't a plant
+            if (cf.isPlant() && hasBlocksOfAirBelow(XYZBlock.x(), XYZBlock.y(), XYZBlock.z(), 30,
+                    new Classification[]{Classification.UNKNOWN, Classification.BUILDING}, false)) {
+                this.blocks.set(XYZBlock, this.unknownBlock);
+            }
             //if a plant has less than three plants next to it, it is removed
-            if ((cf.isPlant() && this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock, cf) < 3)
+            else if ((cf.isPlant() && this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock, cf) < 3)
                     //if a block classified as unknown has less than two other unknown blocks next to it
                     //then it is removed
                     || (cf == Classification.UNKNOWN && this.blocks.numberOfNeighboringBlocksWithClassification(XYZBlock, cf) <= 1)) {
                 this.blocks.remove(XYZBlock);
                 amount++;
             }
+
         }
         LOGGER.debug("Removed: " + amount + " blocks");
     }
@@ -125,56 +144,105 @@ public class BlockDataFixer {
         }
         LOGGER.debug("Changed " + amount + " blocks");
     }
+    private record Coordinate(int x, int y, int z) {
+        public Coordinate(XYZBlock block) {
+            this(block.x(), block.y(), block.z());
+        }
+    }
     //Some trees have blocks classified as unknown on top of them for some reason
     //this fixes that
     private void mergeUnknownBlocksToPlants() {
         LOGGER.debug("Merging unknown blocks to plants");
         int amount = 0;
+
+
+        Queue<Coordinate> queue = new ArrayDeque<>();
         for (XYZBlock XYZBlock : this.blocks) {
             Classification cf = XYZBlock.block().classification();
             if (cf != Classification.UNKNOWN) continue;
-            if (this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock, cf, 3) > 10) continue;
-            List<XYZBlock> neighbors = this.blocks.neighborsList(XYZBlock);
-            if (neighbors.isEmpty()) continue;
+            queue.add(new Coordinate(XYZBlock));
+        }
+
+        HashMap<Coordinate, Integer> alreadyChanged = new HashMap<>();
+        while (!queue.isEmpty()) {
+            Coordinate coordinate = queue.poll();
+
+            List<XYZBlock> neighbors = this.blocks.neighborsList(coordinate.x, coordinate.y, coordinate.z);
             for (XYZBlock neighbor : neighbors) {
-                if (neighbor.block().classification().isPlant()) {
-                    this.blocks.set(XYZBlock, neighbor.block());
-                    amount++;
-                    break;
+                if (!neighbor.block().classification().isPlant()) continue;
+
+                int iterationNum = alreadyChanged.getOrDefault(new Coordinate(neighbor.x(), neighbor.y(), neighbor.z()), 0);
+                if (iterationNum > 3) continue;
+                this.blocks.set(coordinate.x, coordinate.y, coordinate.z, neighbor.block());
+                alreadyChanged.put(coordinate, iterationNum+1);
+                for (XYZBlock b : neighbors) {
+                    if (b.block().classification() == Classification.UNKNOWN) {
+                        queue.add(new Coordinate(b));
+                    }
                 }
+
+                amount++;
+                break;
             }
         }
         LOGGER.debug("Changed " + amount + " blocks");
     }
-    private void addIfNull(List<XYZBlock> list, int x, int y, XYZBlock[][] ground) {
+    private void randomFixes() {
+        ArrayList<Coordinate> roofBlocks = new ArrayList<>();
+        for (XYZBlock block : blocks) {
+            if ((block.block().classification() == Classification.UNKNOWN || block.block().classification().isPlant())
+                    && blocks.numberOfNeighboringBlocksWithClassification(block, block.block().classification()) == 0) {
+                blocks.remove(block);
+            }
+            if (block.block().classification() == Classification.BUILDING
+            && blocks.numberOfNeighboringBlocksWithClassification(block, block.block().classification()) <= 1) {
+                blocks.remove(block);
+            }
+            else if (block.block().classification() == Classification.BUILDING) {
+                Block upper = blocks.get(block.x(), block.y(), block.z() + 1);
+                if (upper == null || upper.classification() != Classification.BUILDING) {
+                    blocks.set(block, this.roofBlock);
+                    roofBlocks.add(new Coordinate(block));
+                }
+            }
+        }
+        for (Coordinate roof : roofBlocks) {
+            List<XYZBlock> neighbors = blocks.neighborsList(roof.x, roof.y, roof.z);
+            boolean hasRoofNeighbor = neighbors.stream().anyMatch(n -> n.block().equals(this.roofBlock));
+            if (!hasRoofNeighbor) blocks.set(roof.x, roof.y, roof.z, this.buildingBlock);
+        }
+    }
+    private void addIfNull(List<XYZBlock> list, int x, int y, int z, XYZBlock[][] ground) {
         if (x < 0 || y < 0 || x >= ground.length || y >= ground[0].length) {
             return;
         }
-        if (ground[x][y].block() != null) return;
-        list.add(ground[x][y]);
+        if (ground[x][y] == null) {
+            list.add(new XYZBlock(x,y,z, null));
+        }
     }
-    private List<XYZBlock> nullNeighbors(int x, int y, XYZBlock[][] ground) {
+    private List<XYZBlock> nullNeighbors(int x, int y, int z, XYZBlock[][] ground) {
         ArrayList<XYZBlock> ret = new ArrayList<>(4);
-        addIfNull(ret, x-1, y, ground);
-        addIfNull(ret, x+1, y, ground);
-        addIfNull(ret, x, y-1, ground);
-        addIfNull(ret, x, y+1, ground);
+        addIfNull(ret, x-1, y,z, ground);
+        addIfNull(ret, x+1, y,z, ground);
+        addIfNull(ret, x, y-1,z, ground);
+        addIfNull(ret, x, y+1,z, ground);
         return ret;
     }
     //Making sure that every (x,y) column has at least one ground block.
     //This fills any holes in the landscape
     private void fillInGround() {
+        LOGGER.debug("Filling in the ground");
         XYZBlock[][] ground = blocks.getGroundLayerIncomplete();
         PriorityQueue<XYZBlock> edges = new PriorityQueue<>(Comparator.comparingInt(XYZBlock::z));
         for (int x = 0; x < blocks.getWidth(); x++) {
             for (int y = 0; y < blocks.getLength(); y++) {
-                List<XYZBlock> nullNeighbors = nullNeighbors(x, y, ground);
-                if (!nullNeighbors.isEmpty()) edges.add(ground[x][y]);
+                List<XYZBlock> nullNeighbors = nullNeighbors(x, y, 0, ground);
+                if (!nullNeighbors.isEmpty() && ground[x][y] != null) edges.add(ground[x][y]);
             }
         }
         while (!edges.isEmpty()) {
             XYZBlock edge = edges.poll();
-            List<XYZBlock> nullNeighbors = nullNeighbors(edge.x(), edge.y(), ground);
+            List<XYZBlock> nullNeighbors = nullNeighbors(edge.x(), edge.y(), edge.z(), ground);
             for (XYZBlock nullNeighbor : nullNeighbors) {
                 XYZBlock newXYZBlock = new XYZBlock(nullNeighbor.x(), nullNeighbor.y(), nullNeighbor.z(), edge.block());
                 ground[nullNeighbor.x()][nullNeighbor.y()] = newXYZBlock;
@@ -182,6 +250,8 @@ public class BlockDataFixer {
                 edges.add(newXYZBlock);
             }
         }
+        //throws error if the ground still contains holes
+        blocks.getGroundLayer();
     }
 
     private void fillBottom() {
@@ -190,9 +260,9 @@ public class BlockDataFixer {
         for (int x = 0; x < blocks.getWidth(); x++) {
             for (int y = 0; y < blocks.getLength(); y++) {
                 for (int z = 0; z < blocks.getHeight(); z++) {
-                    //finding the lowest block
-                    if (this.blocks.isAir(x, y, z)) continue;
+                    //finding the lowest ground block
                     Block block = this.blocks.get(x, y, z);
+                    if (block == null || block.classification() != Classification.GROUND) continue;
                     //filling down to the bottom
                     for (; z >= 0; z--) {
                         blocks.set(x, y, z, block);
@@ -206,18 +276,18 @@ public class BlockDataFixer {
     }
 
 
-    private static class Coordinate {
+    private static class ClassifiedCoordinate {
         int x, y, z;
         Classification classification;
 
-        public Coordinate(int x, int y, int z, Classification classification) {
+        public ClassifiedCoordinate(int x, int y, int z, Classification classification) {
             this.x = x;
             this.y = y;
             this.z = z;
             this.classification = classification;
         }
 
-        public Coordinate(XYZBlock XYZBlock) {
+        public ClassifiedCoordinate(XYZBlock XYZBlock) {
             this.x = XYZBlock.x();
             this.y = XYZBlock.y();
             this.z = XYZBlock.z();
@@ -228,7 +298,7 @@ public class BlockDataFixer {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Coordinate that = (Coordinate) o;
+            ClassifiedCoordinate that = (ClassifiedCoordinate) o;
             return x == that.x && y == that.y && z == that.z && classification == that.classification;
         }
 
@@ -238,38 +308,46 @@ public class BlockDataFixer {
         }
     }
 
-    private void add(int x, int y, int z, Queue<Coordinate> q) {
-        if (x < 0 || y < 0 || z < 0 || x >= blocks.getWidth() || y >= blocks.getLength() || z >= blocks.getHeight())
-            return;
+    private void addIfValid(int x, int y, int z, Queue<ClassifiedCoordinate> q) {
+        if (!blocks.inRange(x,y,z)) return;
         Block block = blocks.get(x, y, z);
         if (block != null && block.classification() == Classification.WATER) return;
-        if (block != null) q.add(new Coordinate(x, y, z, block.classification()));
-        else q.add(new Coordinate(x, y, z, null));
+        if (block != null) q.add(new ClassifiedCoordinate(x, y, z, block.classification()));
+        else q.add(new ClassifiedCoordinate(x, y, z, null));
     }
 
     //the lidar laser is bad at detecting water so oceans may have holes in them
     //Flood fill algorithm: https://en.wikipedia.org/wiki/Flood_fill
     private void floodWater() {
-        Block waterBlock = this.waterBlock;
-
         LOGGER.debug("Starting to fill water");
         int amount = 0;
-        HashSet<Coordinate> visited = new HashSet<>();
-        Queue<Coordinate> q = new ArrayDeque<>();
+        HashSet<ClassifiedCoordinate> visited = new HashSet<>();
+        Queue<ClassifiedCoordinate> q = new LinkedList<>();
+        XYZBlock[][] ground = blocks.getGroundLayerIncomplete();
+
         for (XYZBlock block : blocks) {
             if (block.block().classification() != Classification.WATER) continue;
-            q.add(new Coordinate(block));
+            q.add(new ClassifiedCoordinate(block));
             while (!q.isEmpty()) {
-                Coordinate n = q.poll();
-                if (!visited.contains(n) && (n.classification == null || n.classification.isPlant() || n.classification == Classification.WATER)) {
-                    blocks.set(n.x, n.y, n.z, waterBlock);
-                    amount++;
-                    visited.add(n);
-                    add(n.x - 1, n.y, n.z, q);
-                    add(n.x + 1, n.y, n.z, q);
-                    add(n.x, n.y - 1, n.z, q);
-                    add(n.x, n.y + 1, n.z, q);
+                ClassifiedCoordinate n = q.poll();
+                if (visited.contains(n)) continue;
+                visited.add(n);
+                if (n.classification != null && !n.classification.isPlant()) continue;
+                if (ground[n.x][n.y] != null) continue;
+                Block below = blocks.get(n.x, n.y, n.z - 1);
+                if (below != null && below.classification() == Classification.WATER) continue;
+
+                blocks.set(n.x, n.y, n.z, this.waterBlock);
+                if (n.z == 0) {
+                    blocks.set(n.x, n.y, 0, this.waterBlock);
+                } else {
+                    blocks.set(n.x, n.y, 0, this.seaBottomBlock);
                 }
+                amount++;
+                addIfValid(n.x - 1, n.y, n.z, q);
+                addIfValid(n.x + 1, n.y, n.z, q);
+                addIfValid(n.x, n.y - 1, n.z, q);
+                addIfValid(n.x, n.y + 1, n.z, q);
             }
 
         }

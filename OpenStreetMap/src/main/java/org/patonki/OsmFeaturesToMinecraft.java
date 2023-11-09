@@ -101,7 +101,7 @@ public class OsmFeaturesToMinecraft {
         for (int x = xo-radius; x <= xo+radius; x++) {
             for (int y = yo-radius; y <= yo+radius; y++) {
                 if (x < 0 || y < 0 || x >= groundLayer.getWidth() || y >= groundLayer.getLength()) continue;
-                XYZBlock i = groundLayer.getItem(x,y);
+                XYZBlock i = groundLayer.getXYZBlock(x,y);
                 if (i == null) {
                     noGround.add(new XYZBlock(x,y, minZ, null));
                     continue;
@@ -173,7 +173,7 @@ public class OsmFeaturesToMinecraft {
         for (int x = xo-radius; x <= xo+radius; x++) {
             for (int y = yo-radius; y <= yo+radius; y++) {
                 if (x < 0 || y < 0 || x >= groundLayer.getWidth() || y >= groundLayer.getLength()) continue;
-                XYZBlock i = groundLayer.getItem(x,y);
+                XYZBlock i = groundLayer.getXYZBlock(x,y);
                 Block block = i.block();
                 if (roads[x][y] != null) continue;
                 if (block.id() == 1) built.add(i);

@@ -1,0 +1,21 @@
+group white 1
+white_wool 35 wool_colored_white
+smooth_quartz 43:7 quartz_block_bottom
+snow_block 80 snow
+chiseled_quartz_block 155:1 quartz_block_chiseled
+quartz_block 155 quartz_block_side
+
+group gray 1
+gray_wool 35:7 wool_colored_gray
+light_gray_wool 35:8 wool_colored_silver
+smooth_stone 43:8 stone_slab_top
+#clay 82
+stone_bricks 98 stonebrick
+cyan_terracotta 159:9 hardened_clay_stained_cyan
+gray_concrete 251:7 concrete_gray
+light_gray_concrete 251:8 concrete_silver
+
+group black 0.7
+black_wool 35:15 wool_colored_black
+coal_block 173
+black_concrete 251:15 concrete_black

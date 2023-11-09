@@ -4,7 +4,13 @@ package org.patonki.blocks.nodes;
 import org.patonki.blocks.XYZBlock;
 import org.patonki.data.Block;
 
+import java.util.Iterator;
+
 public abstract class Node implements Iterable<Node.ByteItem>{
+
+
+    public abstract Iterator<ByteItem> getIterator(boolean bottomToUp);
+
     public interface ByteAction {
         void run(int x, int y, int z, byte b);
     }

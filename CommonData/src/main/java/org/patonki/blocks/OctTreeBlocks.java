@@ -1,5 +1,6 @@
 package org.patonki.blocks;
 
+import org.jetbrains.annotations.NotNull;
 import org.patonki.blocks.nodes.Node;
 import org.patonki.blocks.nodes.ParentNode;
 import org.patonki.data.Block;
@@ -30,7 +31,7 @@ public class OctTreeBlocks extends Blocks {
         this.blocks = new ParentNode(0,0,0, width, length, height, maxSize);
     }
 
-    public boolean set(int x, int y, int z, Block block) {
+    public boolean set(int x, int y, int z, @NotNull Block block) {
         Byte index = ids.get(block);
         if (index == null) {
             byte size = (byte) (ids.size() + 1);
@@ -85,9 +86,12 @@ public class OctTreeBlocks extends Blocks {
     }
     @Override
     public Iterator<XYZBlock> iterator() {
-        return new XYZIterator();
+        return new XYZIterator(true);
     }
-
+    @Override
+    public Iterator<XYZBlock> getIterator(boolean bottomToUp) {
+        return new XYZIterator( bottomToUp);
+    }
     /**
      * Iterates over blocks
      */
@@ -95,8 +99,8 @@ public class OctTreeBlocks extends Blocks {
         private final XYZBlock XYZBlock;
         private final Iterator<Node.ByteItem> iterator;
 
-        public XYZIterator() {
-            this.iterator = blocks.iterator();
+        public XYZIterator(boolean bottomToUp) {
+            this.iterator = blocks.getIterator(bottomToUp);
             this.XYZBlock = new XYZBlock(0,0,0, null);
         }
         @Override
@@ -135,17 +139,19 @@ public class OctTreeBlocks extends Blocks {
             //storing the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 Block block = blocks.pallet[palletIndex];
-                if (block == null) continue;
-                serialized[i] = block.id();
-                serialized[i+1] = block.data();
-                serialized[i+2] = (byte) Classification.index(block.classification());
+                if (block != null) {
+                    serialized[i] = block.id();
+                    serialized[i+1] = block.data();
+                    serialized[i+2] = (byte) Classification.index(block.classification());
+                }
                 i+=3;
             }
             //storing the blocks
             int finalI = i;
             blocks.blocks.forEach((x, y, z, b) -> {
-                int index = (z * blocks.length + y) * blocks.width + x;
+                int index =  z * (blocks.width * blocks.length) + x*(blocks.length) + y;
                 index += finalI;
+
                 serialized[index] = b;
             });
             return serialized;
@@ -172,17 +178,22 @@ public class OctTreeBlocks extends Blocks {
             //the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 byte id = ar[i];
-                byte data = ar[i+1];
-                Classification classification = Classification.values()[ar[i+2]];
-                blocks.pallet[palletIndex] = new Block(id, data, classification);
+                if (id != 0) {
+                    byte data = ar[i+1];
+                    Classification classification = Classification.values()[ar[i+2]];
+                    blocks.pallet[palletIndex] = new Block(id, data, classification);
+                }
                 i+=3;
             }
             //the blocks
             int finalI = i;
             blocks.blocks.forEachSet((x, y, z) -> {
-                int index = (z * blocks.length + y) * blocks.width + x;
+                int index =  z * (blocks.width * blocks.length) + x*(blocks.length) + y;
                 index += finalI;
-                return ar[index];
+
+                byte number = ar[index];
+                blocks.ids.put(blocks.pallet[number], number);
+                return number;
             });
             return blocks;
         }

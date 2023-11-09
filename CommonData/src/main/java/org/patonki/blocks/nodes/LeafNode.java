@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 
 public class LeafNode extends Node{
     private final byte[] blocks;
+
     public LeafNode(int minX, int minY, int minZ, int width, int length, int height) {
         super(minX, minY, minZ, width, length, height);
         this.blocks = new byte[width*length*height];
@@ -104,12 +105,14 @@ public class LeafNode extends Node{
 
     private class BlocksIterator implements Iterator<ByteItem> {
         private int x,y,z;
+        private int zStep = 1;
         private final ByteItem item = new ByteItem(0,0,0, (byte) 0);
 
-        private void reset() {
+        private void reset(boolean bottomToUp) {
             this.x = -1;
             this.y = 0;
-            this.z = 0;
+            this.z = bottomToUp ? 0 : height-1;
+            this.zStep = bottomToUp ? 1 : -1;
             advance();
         }
         private void advanceCoordinates() {
@@ -117,7 +120,7 @@ public class LeafNode extends Node{
             if (x == width) {
                 x = 0;y++;
                 if (y == length) {
-                    y = 0;z++;
+                    y = 0;z+=zStep;
                 }
             }
         }
@@ -126,7 +129,7 @@ public class LeafNode extends Node{
         }
         private void advance() {
             advanceCoordinates();
-            while (z < height && blocks[pos(x,y,z)] == 0) {
+            while (z >= 0 && z < height && blocks[pos(x,y,z)] == 0) {
                 advanceCoordinates();
             }
         }
@@ -150,7 +153,13 @@ public class LeafNode extends Node{
     private final BlocksIterator iterator = new BlocksIterator();
     @Override
     public Iterator<ByteItem> iterator() {
-        iterator.reset();
+        iterator.reset(true);
+        return iterator;
+    }
+    @Override
+    public Iterator<ByteItem> getIterator(boolean bottomToUp) {
+        iterator.reset(bottomToUp);
+
         return iterator;
     }
 }

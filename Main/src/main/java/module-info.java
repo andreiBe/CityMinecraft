@@ -10,6 +10,8 @@ module Main {
     requires MinecraftSchematic;
     requires WorldDecorator;
     requires jdk.unsupported;
+    requires CityGml;
+    requires org.apache.logging.log4j.core;
 
     exports org.patonki.downloader;
     exports org.patonki.main;

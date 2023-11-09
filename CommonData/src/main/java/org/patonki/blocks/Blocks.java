@@ -1,11 +1,15 @@
 package org.patonki.blocks;
 
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class is used to store minecraft blocks in an area defined by the width, length, height
@@ -50,6 +54,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
         return x >= 0 && y >= 0 && z >= 0 && x < this.width && y < this.length && z < this.height;
     }
 
+
     /**
      * Sets a block at a coordinate. The blocks should not be null! See {@link #remove(int, int, int)}
      * @param x x
@@ -58,7 +63,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
      * @param block the block
      * @return if setting the block was successful. Returns false when out of bounds
      */
-    public abstract boolean set(int x, int y, int z, Block block);
+    public abstract boolean set(int x, int y, int z, @NotNull Block block);
     public boolean set(XYZBlock XYZBlock, Block block) {
         return this.set(XYZBlock.x, XYZBlock.y, XYZBlock.z, block);
     }
@@ -96,6 +101,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
      * @param z z
      * @return The block
      */
+    @Nullable
     public abstract Block get(int x, int y, int z);
     public Block get(XYZBlock XYZBlock) {
         return this.get(XYZBlock.x, XYZBlock.y, XYZBlock.z);
@@ -133,13 +139,17 @@ public abstract class Blocks implements Iterable<XYZBlock>{
      */
     public int numberOfNeighboringBlocksWithClassification(int x, int y, int z, Classification classification) {
         int sum = 0;
-        if (classification == (get(x-1, y, z)).classification()) sum++;
-        if (classification == (get(x, y-1, z)).classification()) sum++;
-        if (classification == (get(x, y, z-1)).classification()) sum++;
-        if (classification == (get(x+1, y, z)).classification()) sum++;
-        if (classification == (get(x, y+1, z)).classification()) sum++;
-        if (classification == (get(x, y, z+1)).classification()) sum++;
+        if (hasClassification(x-1, y, z,classification)) sum++;
+        if (hasClassification(x, y-1, z,classification)) sum++;
+        if (hasClassification(x, y, z-1,classification)) sum++;
+        if (hasClassification(x+1, y, z,classification)) sum++;
+        if (hasClassification(x, y+1, z,classification)) sum++;
+        if (hasClassification(x, y, z+1,classification)) sum++;
         return sum;
+    }
+    private boolean hasClassification(int x, int y, int z, Classification classification) {
+        Block block = get(x,y,z);
+        return block != null && block.classification() == classification;
     }
     public int numberOfNeighboringBlocksWithClassification(XYZBlock XYZBlock, Classification classification) {
         return numberOfNeighboringBlocksWithClassification(XYZBlock.x, XYZBlock.y, XYZBlock.z, classification);
@@ -162,7 +172,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
             for (int y1 = y-radius; y1 < y+radius; y1++) {
                 for (int z1 = z-radius; z1 < z+radius; z1++) {
                     Block b = get(x1,y1,z1);
-                    if (classification == b.classification()) sum++;
+                    if (b != null && classification == b.classification()) sum++;
                 }
             }
         }
@@ -279,6 +289,31 @@ public abstract class Blocks implements Iterable<XYZBlock>{
         }
     }
 
+    /**
+     * Runs an action on a block and returns a new block or null if the block should be removed
+     */
+    public interface BlockSetAction {
+        @Nullable Block run(int x, int y, int z, @Nullable Block block);
+    }
+    /**
+     * Runs the action on every block in the area and replaces the block with whatever the action returns.
+     * The blocks will not be processed in any specific order
+     * @param action action
+     */
+    public void forEachSet(BlockSetAction action) {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < length; y++) {
+                for (int z = 0; z < height; z++) {
+                    Block block = action.run(x,y,z, get(x,y,z));
+                    if (block != null) {
+                        set(x,y,z, block);
+                    } else {
+                        remove(x,y,z);
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Data format for storing blocks. Same for all implementations of {@link Blocks}<br>
@@ -289,6 +324,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
                             short width, short length, short height,
                             int minX, int minY, int minZ) {}
 
+    public abstract Iterator<XYZBlock> getIterator(boolean bottomToUp);
     /**
      * Returns an {@link BlockData} object that represents the data.
      * The format of the {@link BlockData} mimics the format of .schematic files
@@ -305,6 +341,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
             blocks[i] = b.id();
             data[i] = b.data();
         });
+
         return new Blocks.BlockData(blocks, data, (short) this.length, (short) this.width, (short) this.height, minX, minY, minZ);
     }
 
