@@ -1,5 +1,7 @@
-package org.patonki.citygml.downloader;
+package org.patonki.citygml.parser;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.patonki.citygml.features.*;
 import org.patonki.citygml.math.Point2D;
 import org.xmlobjects.gml.model.geometry.AbstractGeometry;
@@ -38,6 +40,7 @@ import java.util.List;
  */
 public class CityGmlParser {
     private final String imgDownloadLocation;
+    private static final Logger LOGGER = LogManager.getLogger(CityGmlParser.class);
 
     /**
      * Creates a CityGmlParser
@@ -110,9 +113,11 @@ public class CityGmlParser {
         //traversing the textures of the file
         building.accept(new TextureParser(textureMap));
         //traversing the structures of the file
-        building.accept(new StructureParser(building.getId(), textureMap, walls, roofs));
+        building.accept(new StructureParser(textureMap, walls, roofs));
         //returning the finished building
-        return new org.patonki.citygml.features.Building(walls.toArray(new Wall[0]), roofs.toArray(new Roof[0]));
+        Wall[] wallsAr = walls.toArray(Wall[]::new);
+        Roof[] roofsAr = roofs.toArray(Roof[]::new);
+        return new org.patonki.citygml.features.Building(wallsAr, roofsAr, building.getId());
     }
 
     private class TextureParser extends ObjectWalker {
@@ -156,20 +161,17 @@ public class CityGmlParser {
                 AbstractGeometry refObj = association.getTarget().getReferencedObject();
                 if (refObj == null) return;
                 String id = refObj.getId();
-                ;
                 textureMap.put(id, new ImgTexture(imgUri, coordinates));
             }
         }
     }
 
     private static class StructureParser extends ObjectWalker {
-        private final String buildingId;
         private final HashMap<String, Texture> textureMap;
         private final ArrayList<Wall> walls;
         private final ArrayList<Roof> roofs;
 
-        public StructureParser(String buildingId, HashMap<String, Texture> textureMap, ArrayList<Wall> walls, ArrayList<Roof> roofs) {
-            this.buildingId = buildingId;
+        public StructureParser(HashMap<String, Texture> textureMap, ArrayList<Wall> walls, ArrayList<Roof> roofs) {
             this.textureMap = textureMap;
             this.walls = walls;
             this.roofs = roofs;
@@ -191,17 +193,15 @@ public class CityGmlParser {
          */
         private <T> T createStructure(AbstractConstructionSurface surface,
                                       StructureMaker<T> maker) {
+            //this is just how the gml files are structured
             MultiSurface multiSurface = surface.getLod2MultiSurface().getObject();
             AbstractSurface surfaceMember = multiSurface.getSurfaceMember().get(0).getObject();
-            //making sure the geometry is defined as a polygon
             if (!(surfaceMember instanceof Polygon polygon)) {
                 throw new IllegalArgumentException("Expected surface member of polygon but got: " + surfaceMember.getClass().getSimpleName());
             }
             String id = polygon.getId();
-            //TODO REMOVE
-            //if (!id.equals("Roof_Solid_336188758_103_72")) return null;
             AbstractRing exterior = polygon.getExterior().getObject();
-            //The polygon must be defined as a LinearRing
+
             if (!(exterior instanceof LinearRing linear)) {
                 throw new IllegalArgumentException("Expected LinearRing but got: " + exterior.getClass().getSimpleName());
             }
@@ -220,36 +220,31 @@ public class CityGmlParser {
             try {
                 Polygon3D pol = new Polygon3D(points, texture);
                 return maker.create(pol, id);
-            } catch (Polygon3D.PolygonException e) {
-                //e.printStackTrace();
+            } catch (Polygon3D.PolygonException e) { //the polygon cannot be created
                 return null;
             }
         }
 
         @Override
         public void visit(RoofSurface roofSurface) {
-            //System.out.println("Creating ROOF");
             Roof roof = createStructure(roofSurface, Roof::new);
             if (roof != null) {
-                //System.out.println("Roof id " + roof.getId());
                 roofs.add(roof);
             }
         }
 
         @Override
         public void visit(WallSurface wallSurface) {
-            //System.out.println("Creating WALL");
             Wall wall = createStructure(wallSurface, Wall::new);
             if (wall != null) {
-                //System.out.println("Wall id " + wall.getId());
                 walls.add(wall);
             }
         }
     }
 
     public static class GmlParseException extends Exception {
-        public GmlParseException(String msg) {
-            super(msg);
+        public GmlParseException(Exception e) {
+            super(e);
         }
     }
 
@@ -265,10 +260,9 @@ public class CityGmlParser {
             while (reader.hasNext()) {
                 AbstractFeature building = reader.next();
                 if (!(building instanceof Building)) {
-                    System.out.println("Found something that isn't a building: " + building.getClass().getSimpleName());
+                    LOGGER.warn("Found something that isn't a building: " + building.getClass().getSimpleName());
                     continue;
                 }
-                //if (!building.getId().contains("Building_1155304")) continue;
                 var b = parseBuilding((Building) building);
                 buildings.add(b);
             }
@@ -287,8 +281,7 @@ public class CityGmlParser {
         try {
             return readFeaturesImpl(path);
         } catch (CityGMLContextException | CityGMLReadException e) {
-            e.printStackTrace();
-            throw new GmlParseException(e.getMessage());
+            throw new GmlParseException(e);
         }
     }
 

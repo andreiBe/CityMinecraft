@@ -8,9 +8,10 @@ module CityGml {
     requires com.google.gson;
 
     exports org.patonki.citygml.features to com.google.gson;
-    exports org.patonki.citygml.endpoint;
+    exports org.patonki.citygml.math to com.google.gson;
+    exports org.patonki.citygml.citygml;
 
     opens org.patonki.citygml.features to com.google.gson;
     opens org.patonki.citygml.math to com.google.gson;
-    opens org.patonki.citygml.endpoint to com.google.gson;
+    opens org.patonki.citygml.citygml to com.google.gson;
 }

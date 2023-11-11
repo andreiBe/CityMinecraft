@@ -1,4 +1,4 @@
-package org.patonki.citygml.endpoint;
+package org.patonki.citygml.citygml;
 
 import org.patonki.color.ColorToBlockConverterOptions;
 import org.patonki.data.Block;

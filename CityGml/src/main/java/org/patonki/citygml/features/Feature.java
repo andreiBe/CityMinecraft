@@ -2,7 +2,6 @@ package org.patonki.citygml.features;
 
 
 import org.patonki.data.BoundingBox3D;
-import org.patonki.data.IntBoundingBox;
 import org.patonki.data.IntBoundingBox3D;
 
 public abstract class Feature {

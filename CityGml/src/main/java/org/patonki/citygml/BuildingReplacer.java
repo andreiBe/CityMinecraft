@@ -1,11 +1,9 @@
 package org.patonki.citygml;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.patonki.blocks.Blocks;
 import org.patonki.blocks.XYZBlock;
-import org.patonki.citygml.endpoint.BlockLocation;
-import org.patonki.citygml.endpoint.BlockLocations;
+import org.patonki.citygml.citygml.BlockLocation;
+import org.patonki.citygml.citygml.BlockLocations;
 import org.patonki.data.Block;
 import org.patonki.data.BoundingBox3D;
 import org.patonki.data.Classification;
@@ -19,7 +17,6 @@ import java.util.function.Consumer;
 public class BuildingReplacer implements Consumer<BlockLocations> {
     private final Blocks blocks;
 
-    private static final Logger LOGGER = LogManager.getLogger(BuildingReplacer.class);
     private final ReentrantLock lock = new ReentrantLock();
 
     private final Block buildingBlock;

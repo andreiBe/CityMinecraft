@@ -3,7 +3,7 @@ package org.patonki.main;
 import org.patonki.blocks.ArrayBlocks;
 import org.patonki.blocks.Blocks;
 import org.patonki.blocks.OctTreeBlocks;
-import org.patonki.citygml.endpoint.CityGmlEndpoint;
+import org.patonki.citygml.citygml.CityGmlEndpoint;
 import org.patonki.converter.MinecraftWorldWriter;
 import org.patonki.converter.SchematicCreator;
 import org.patonki.data.BlockSerializer;

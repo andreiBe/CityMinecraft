@@ -1,7 +1,5 @@
 package org.patonki.citygml.features;
 
-
-
 import org.patonki.citygml.math.Point2D;
 
 import java.util.ArrayList;

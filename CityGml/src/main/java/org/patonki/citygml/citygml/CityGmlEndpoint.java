@@ -1,17 +1,13 @@
-package org.patonki.citygml.endpoint;
+package org.patonki.citygml.citygml;
 
 import org.patonki.blocks.Blocks;
 import org.patonki.citygml.BuildingReplacer;
 import org.patonki.citygml.GmlFeaturesInArea;
-import org.patonki.citygml.downloader.CityGmlDownloader;
 import org.patonki.citygml.features.BuildingCollection;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 
-import java.io.IOException;
-
 public class CityGmlEndpoint {
-    private final CityGmlDownloader downloader;
     private final GmlOptions options;
 
     private final String texturesFolder;
@@ -19,9 +15,10 @@ public class CityGmlEndpoint {
 
     private final Block buildingBlock;
     private final Block roofBlock;
+    private final String downloadFolder;
 
     public CityGmlEndpoint(String downloadFolder, String texturesFolder, GmlOptions options, boolean multiThread, Block buildingBlock, Block roofBlock) {
-        this.downloader = new CityGmlDownloader(downloadFolder);
+        this.downloadFolder = downloadFolder;
         this.options = options;
         this.texturesFolder = texturesFolder;
         this.multiThread = multiThread;
@@ -30,6 +27,7 @@ public class CityGmlEndpoint {
     }
 
     public void applyBuildings(Blocks blocks) throws Exception {
+        CityGmlDownloader downloader = new CityGmlDownloader(this.downloadFolder);
         BuildingCollection buildings = downloader.deserialize(blocks.getMinX(), blocks.getMinY(),
                 blocks.getMinX() + blocks.getWidth(), blocks.getMinY() + blocks.getLength());
 
@@ -51,7 +49,7 @@ public class CityGmlEndpoint {
             if (block.equals(roofBlock)) return placeHolderRoofBlock;
             return block;
         });
-        processor.process(buildings, options, buildingReplacer, texturesFolder,false);
+        processor.process(buildings, options, buildingReplacer, texturesFolder,this.multiThread);
         //Replacing the placeholders with the old blocks
         blocks.forEachSet((x,y,z,block) -> {
             if (block == null) return null;
@@ -59,9 +57,5 @@ public class CityGmlEndpoint {
             if (block.equals(placeHolderRoofBlock)) return roofBlock;
             return block;
         });
-
-    }
-    public void downloadBuildings(int minX, int minY, int maxX, int maxY, String url, String gmlVersion) throws IOException {
-        downloader.downloadAndParseGml(minX, minY, maxX, maxY,url, gmlVersion);
     }
 }

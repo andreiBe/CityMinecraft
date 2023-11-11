@@ -9,7 +9,6 @@ import org.patonki.data.Classification;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class is used to store minecraft blocks in an area defined by the width, length, height
@@ -23,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The coordinates start from zero. One corner is (0,0,0) and another (width-1, length-1, height-1)
  */
 
+@SuppressWarnings({"unused", "UnusedReturnValue", "BooleanMethodIsAlwaysInverted"})
 public abstract class Blocks implements Iterable<XYZBlock>{
     protected final int width, length, height, minX, minY, minZ;
 

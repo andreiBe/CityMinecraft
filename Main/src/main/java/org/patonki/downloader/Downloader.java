@@ -3,7 +3,8 @@ package org.patonki.downloader;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.patonki.citygml.endpoint.CityGmlEndpoint;
+import org.patonki.citygml.citygml.CityGmlDownloader;
+import org.patonki.citygml.citygml.CityGmlEndpoint;
 import org.patonki.data.IntBoundingBox;
 import org.patonki.openstreetmap.FeatureFilterer;
 
@@ -132,8 +133,8 @@ public class Downloader {
         if (Objects.requireNonNull(minecraftTexturePackFolder.list()).length == 0) {
             this.downloadTexturePackFromMicrosoft(texturesFolder);
         }
+        CityGmlDownloader downloader = new CityGmlDownloader(gmlDownloadFolder);
 
-        CityGmlEndpoint endpoint = new CityGmlEndpoint(gmlDownloadFolder, texturesFolder, null, false, null, null);
         int smallestX = settings.box().minX();
         int smallestY = settings.box().minY();
         int largestX = settings.box().maxX();
@@ -142,7 +143,7 @@ public class Downloader {
             for (int y = smallestY; y <= largestY; y += settings.stepMeter()) {
                 LOGGER.info("Downloading gml area " + x + "," + y + " to " +(x + settings.stepMeter()) + "," + (y + settings.stepMeter()));
                 try {
-                    endpoint.downloadBuildings(x,y,x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(),settings.gmlVersion() );
+                    downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(), settings.gmlVersion());
                 } catch (IOException e) {
                     LOGGER.error("Error while downloading CityGml buildings");
                     LOGGER.error(e);

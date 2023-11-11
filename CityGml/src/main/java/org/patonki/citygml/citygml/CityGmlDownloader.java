@@ -1,17 +1,16 @@
-package org.patonki.citygml.downloader;
+package org.patonki.citygml.citygml;
 
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.patonki.citygml.parser.CityGmlParser;
 import org.patonki.citygml.features.BuildingCollection;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import org.patonki.citygml.features.ImgTexture;
@@ -44,11 +43,13 @@ public class CityGmlDownloader {
     private String getPathToDownloadedGmlFile(int minX, int minY, int maxX, int maxY) {
         return getAreaDownloadFolder(minX, minY, maxX, maxY) +"/" + minX+" " + minY + " " + maxX + " " + maxY+".gml";
     }
-    private void downloadFile(int minX, int minY, int maxX, int maxY,String downloadUrl, String gmlVersion) throws IOException {
+    private void downloadFileFromWFSServer(int minX, int minY, int maxX, int maxY, String downloadUrl, String gmlVersion) throws IOException {
         String outputPath = getPathToDownloadedGmlFile(minX, minY, maxX, maxY);
         File output = new File(outputPath);
         File parent = output.getParentFile();
-        parent.mkdirs();
+        if (!parent.exists() && !parent.mkdirs()) {
+            LOGGER.warn("Unable to create folder: " + parent.getPath());
+        }
 
         String url = downloadUrl
                 .replace("$XMIN", minX+"")
@@ -66,15 +67,12 @@ public class CityGmlDownloader {
         //https://docs.geoserver.org/stable/en/user/services/wfs/reference.html#getfeature
         //https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwic1Kq2rIKBAxXgLhAIHV0UBwgQFnoECBQQAQ&url=https%3A%2F%2Fportal.ogc.org%2Ffiles%2F%3Fartifact_id%3D8339&usg=AOvVaw1OdoGKt46Zpt4JsbMboIVz&opi=89978449
 
-
-
         URL obj = new URL(url);
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setRequestProperty("Content-Type", "text/xml; subtype=gml/" + gmlVersion);
         con.setRequestMethod("GET");
 
         OutputStream outputFile = new FileOutputStream(outputPath);
-        // Read XML
         InputStream inputStream = con.getInputStream();
         byte[] res = new byte[2048];
         int i;
@@ -89,7 +87,7 @@ public class CityGmlDownloader {
 
         private static final String CLASS_META_KEY = "CLASS_META_KEY";
 
-        private static HashMap<String, Class<?>> classMap = new HashMap<>();
+        private static final HashMap<String, Class<?>> classMap = new HashMap<>();
         static {
             classMap.put(ImgTexture.class.getCanonicalName(), ImgTexture.class);
             classMap.put(Material.class.getCanonicalName(), Material.class);
@@ -116,6 +114,7 @@ public class CityGmlDownloader {
         }
 
     }
+
     public BuildingCollection deserialize(int minX, int minY, int maxX, int maxY) throws FileNotFoundException {
         String filtered = getPathToFilteredBuildingCollection(minX, minY, maxX, maxY);
         LOGGER.info("Reading gml from " + filtered);
@@ -123,7 +122,7 @@ public class CityGmlDownloader {
         return this.buildingSerializer.fromJson(jsonReader, BuildingCollection.class);
     }
     public void downloadAndParseGml(int minX, int minY, int maxX, int maxY, String url, String gmlVersion) throws IOException {
-        downloadFile(minX, minY, maxX, maxY, url, gmlVersion);
+        downloadFileFromWFSServer(minX, minY, maxX, maxY, url, gmlVersion);
         CityGmlParser parser = new CityGmlParser(getImgDownloadFolder(minX, minY, maxX, maxY));
 
         try {

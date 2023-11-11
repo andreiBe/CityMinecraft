@@ -1,7 +1,5 @@
 package org.patonki.color;
 
-import org.patonki.color.Color;
-
 import java.util.ArrayList;
 
 public class ColorAverage {

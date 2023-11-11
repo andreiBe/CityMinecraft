@@ -1,7 +1,7 @@
 package org.patonki.citygml;
 
-import org.patonki.citygml.endpoint.BlockLocation;
-import org.patonki.citygml.endpoint.BlockLocations;
+import org.patonki.citygml.citygml.BlockLocation;
+import org.patonki.citygml.citygml.BlockLocations;
 import org.patonki.citygml.features.Building;
 import org.patonki.citygml.features.BuildingStructure;
 import org.patonki.citygml.features.Point;

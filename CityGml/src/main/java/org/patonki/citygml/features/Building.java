@@ -5,15 +5,14 @@ import org.patonki.data.BoundingBox3D;
 public class Building extends Feature{
     private final Wall[] walls;
     private final Roof[] roofs;
+    private final String id;
 
-    public Building(Wall[] walls, Roof[] roofs) {
+    public Building(Wall[] walls, Roof[] roofs, String id) {
         this.walls = walls;
         this.roofs = roofs;
+        this.id = id;
     }
 
-    public Wall[] getWalls() {
-        return walls;
-    }
     @SuppressWarnings("ManualArrayCopy")
     public BuildingStructure[] getStructures() {
         BuildingStructure[] structures = new BuildingStructure[walls.length + roofs.length];
@@ -26,12 +25,12 @@ public class Building extends Feature{
         return structures;
     }
 
-    public Roof[] getRoofs() {
-        return roofs;
-    }
-
     public BoundingBox3D getBBox() {
         BuildingStructure[] structures = getStructures();
         return getBoundingBoxFromArray(structures);
+    }
+
+    public String getId() {
+        return id;
     }
 }

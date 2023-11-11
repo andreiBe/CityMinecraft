@@ -1,13 +1,13 @@
 <component name="libraryTable">
   <library name="Maven: org.geotools:gt-metadata:30-SNAPSHOT">
     <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-metadata/30-SNAPSHOT/gt-metadata-30-20231024.210109-114.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-metadata/30-SNAPSHOT/gt-metadata-30-20231109.084613-116.jar!/" />
     </CLASSES>
     <JAVADOC>
-      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-metadata/30-SNAPSHOT/gt-metadata-30-20231024.210109-114-javadoc.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-metadata/30-SNAPSHOT/gt-metadata-30-20231109.084613-116-javadoc.jar!/" />
     </JAVADOC>
     <SOURCES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-metadata/30-SNAPSHOT/gt-metadata-30-20231024.210109-114-sources.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/geotools/gt-metadata/30-SNAPSHOT/gt-metadata-30-20231109.084613-116-sources.jar!/" />
     </SOURCES>
   </library>
 </component>

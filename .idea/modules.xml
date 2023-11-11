@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/CityGml.iml" filepath="$PROJECT_DIR$/CityGml.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CityGml/CityGml.iml" filepath="$PROJECT_DIR$/CityGml/CityGml.iml" />
       <module fileurl="file://$PROJECT_DIR$/CommonData/CommonData.iml" filepath="$PROJECT_DIR$/CommonData/CommonData.iml" />
       <module fileurl="file://$PROJECT_DIR$/LAS/LAS.iml" filepath="$PROJECT_DIR$/LAS/LAS.iml" />
       <module fileurl="file://$PROJECT_DIR$/Main/Main.iml" filepath="$PROJECT_DIR$/Main/Main.iml" />

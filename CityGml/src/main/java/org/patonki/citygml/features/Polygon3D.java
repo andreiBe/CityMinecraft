@@ -175,11 +175,6 @@ public class Polygon3D extends Feature{
         return getBoundingBoxFromArray(points);
     }
 
-
-    public int getPointAmount() {
-        return this.points.length;
-    }
-
     public Point2D[] getPoints2DCopy() {
         Point2D[] copy = new Point2D[this.points.length];
         for (int i = 0; i < this.points.length; i++) {

@@ -1,6 +1,5 @@
-package org.patonki.citygml.endpoint;
+package org.patonki.citygml.citygml;
 
-import org.patonki.data.BoundingBox;
 import org.patonki.data.BoundingBox3D;
 
 import java.util.ArrayList;

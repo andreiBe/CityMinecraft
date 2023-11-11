@@ -1,7 +1,6 @@
 package org.patonki.color;
 
 import org.patonki.data.Block;
-import org.patonki.color.Color;
 import org.patonki.util.Pair;
 
 public interface IColorToBlockConverter {

@@ -1,6 +1,8 @@
 package org.patonki.citygml;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.patonki.color.ColorCounter;
 import org.patonki.color.ImageAutoLevel;
 import org.patonki.citygml.features.ImgTexture;
@@ -24,6 +26,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class TextureReader {
+    private static final Logger LOGGER = LogManager.getLogger(TextureReader.class);
+
     public record Scale(double scaleX, double scaleY, double angleDif, Vector2D textureOrigin, Vector2D polygonOrigin,
                         boolean isReversed, Point2D[] texturePoints) {
     }
@@ -135,7 +139,7 @@ public class TextureReader {
         }
         return res;
     }
-    private Vector2D getTexturePoint(Scale scale, int polygonX, int polygonY, int imageWidth, int imageHeight) {
+    private Vector2D getTexturePoint(Scale scale, int polygonX, int polygonY) {
         Vector2D toAdd = Vector2D.fromAtoB(scale.polygonOrigin, new Point2D(polygonX, polygonY));
         if (toAdd.len() != 0) {
             Vector2D direction = Vector2D.fromAngle(toAdd.angle() + scale.angleDif).multiply(toAdd.len());
@@ -148,32 +152,13 @@ public class TextureReader {
         int textureY = (int) texturePoint.y();
         return new Vector2D(textureX, textureY);
     }
-    private void geogebra(Object[] points, int num) {
-        StringBuilder builder = new StringBuilder("Execute({");
-        char c = 'A';
-        for (int i = 0; i < points.length; i++) {
-            String currentChar = (""+(char) (c + i)).repeat(num);
-
-            builder.append("\"").append(currentChar).append("=").append(points[i]).append("\"");
-
-            if (i != 0) {
-                builder.append(",");
-                String last = (""+(char)(c+i-1)).repeat(num);
-                builder.append("\"Segment(").append(last).append(",").append(currentChar).append(")\"");
-                if (i == points.length -1) {
-                    builder.append(",\"Segment(").append(currentChar).append(",").append("A".repeat(num)).append(")\"");
-                }
-            }
-            if (i != points.length-1) builder.append(",");
-        }
-        builder.append("})");
-        System.out.println(builder);
-    }
     private File getAutoleveledImageFile(String texturePath) {
         File textureFile = new File(texturePath);
         String textureFileName = textureFile.getName();
         File leveledFolder = new File(textureFile.getParent()+"/leveled");
-        if (!leveledFolder.exists()) leveledFolder.mkdirs();
+        if (!leveledFolder.exists() && !leveledFolder.mkdirs()) {
+            LOGGER.warn("Can't create directory: " + leveledFolder.getPath());
+        }
 
         return new File(leveledFolder.getPath()+"/"+ textureFileName);
     }
@@ -204,8 +189,6 @@ public class TextureReader {
         if (polygon.getTexture() instanceof Material material) return createDefault(w, h, material.getColor(), converter);
         if (!(polygon.getTexture() instanceof ImgTexture texture)) return createDefault(w, h, converter);
         if (texture.getCoordinates().length < 3) {return createDefault(w,h, converter);}
-        //if (!texture.getImgPath().contains("Building") || polygon.hashCode() != 1505515650) return createDefault(w,h);
-        //if (!id.equals("Roof_Solid_336185202_103_468")) return createDefault(w,h);
 
         int[][] colors = getAutoLeveledImage(texture.getImgPath());
         var ret = new Block[w][h];
@@ -213,14 +196,6 @@ public class TextureReader {
         int imageHeight = colors.length;
         int imageWidth = colors[0].length;
         Scale scale = calculateScale(polygon.getPoints2DCopy(), texture.getCoordinates(imageWidth, imageHeight), imageHeight, imageWidth, debug);
-        if (debug) {
-            System.out.println("POLYGON " + polygon.hashCode());
-            System.out.println("POLYGON points: ");
-            geogebra(polygon.getPoints2DCopy(), 1);
-            System.out.println("Texture points: ");
-            geogebra(Arrays.stream(scale.texturePoints).map(p -> new Point2D(p.x() / 100, p.y() / 100)).toArray(Point2D[]::new), 2);
-            System.out.println("SCALE: " + scale);
-        }
 
 
         if (scale.isReversed) {
@@ -235,9 +210,9 @@ public class TextureReader {
                 int polygonY = (int) (bBox2D.minY() + y);
 
                 //forming a cube
-                Vector2D texturePointStart = getTexturePoint(scale, polygonX, polygonY, imageWidth, imageHeight);
-                Vector2D rightLower = getTexturePoint(scale, polygonX+1, polygonY, imageWidth, imageHeight);
-                Vector2D leftUpper = getTexturePoint(scale, polygonX, polygonY+1, imageWidth, imageHeight);
+                Vector2D texturePointStart = getTexturePoint(scale, polygonX, polygonY);
+                Vector2D rightLower = getTexturePoint(scale, polygonX+1, polygonY);
+                Vector2D leftUpper = getTexturePoint(scale, polygonX, polygonY+1);
                 rightLower = Vector2D.fromAtoB(texturePointStart,rightLower);
                 leftUpper = Vector2D.fromAtoB(texturePointStart,leftUpper);
 
@@ -245,12 +220,6 @@ public class TextureReader {
                 Vector2D v,u;
                 u = rightLower.len() == 0 ? Vector2D.ZERO : rightLower.normalize();
                 v = leftUpper.len() == 0 ? Vector2D.ZERO : leftUpper.normalize();
-
-                if (debug) {
-                    System.out.println("STARTING FROM " +texturePointStart + " x: " + x + " y: " +y);
-                    System.out.println("Right: " + rightLower);
-                    System.out.println("Left: "+ leftUpper);
-                }
 
                 ColorCounter<Block> counter = new ColorCounter<>();
                 int xLimit = (int) Math.abs(scale.scaleX()) + 1;
@@ -273,26 +242,8 @@ public class TextureReader {
                     ret[x][y] = counter.getMostCommon();
             }
         }
-        if (debug) {
-            Point2D[] tx = scale.texturePoints;
-            for (Point2D coordinate : tx) {
-                fill(colors, (int) coordinate.x(), (int) coordinate.y(), 0xff00ff00);
-            }
-            generateImg(colors, "temp/texturesdebug" + texture.getImgPath().replace(".jpg", "_") + polygon.hashCode() + "-area.jpg");
 
-        }
-
-        //generateImg(colors, "temp/texturesdebug" + texture.getImgPath());
         return wallOneColor ? createDefault(w,h, counterAll.getMostCommon()) : ret;
-    }
-
-    private void fill(int[][] colors, int cx, int cy, int color) {
-        for (int x = cx - 10; x < cx + 10; x++) {
-            for (int y = cy - 10; y < cy + 10; y++) {
-                if (y < 0 || x < 0 || y >= colors.length || x >= colors[0].length) continue;
-                colors[y][x] = color;
-            }
-        }
     }
 
     //stolen from https://stackoverflow.com/a/17175454
@@ -325,7 +276,7 @@ public class TextureReader {
             final int pixelLength = 3;
             for (int pixel = 0, row = 0, col = 0; pixel + 2 < pixels.length; pixel += pixelLength) {
                 int argb = 0;
-                argb += -16777216; // 255 alpha
+                argb -= 16777216; // 255 alpha
                 argb += ((int) pixels[pixel] & 0xff); // blue
                 argb += (((int) pixels[pixel + 1] & 0xff) << 8); // green
                 argb += (((int) pixels[pixel + 2] & 0xff) << 16); // red
@@ -357,20 +308,4 @@ public class TextureReader {
         }
     }
 
-    private static void generateImg(Color[][] blocks, String path) {
-        BufferedImage img = new BufferedImage(blocks[0].length, blocks.length, BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < blocks.length; y++) {
-            Color[] row = blocks[y];
-            for (int x = 0; x < row.length; x++) {
-                Color color = row[x];
-                int colorInt = 0xff << 24 | color.r() << 16 | color.g() << 8 | color.b();
-                img.setRGB(x, y, colorInt);
-            }
-        }
-        try {
-            ImageIO.write(img, "png", new File(path));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

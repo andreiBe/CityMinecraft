@@ -7,7 +7,9 @@ import org.patonki.data.Block;
 import org.patonki.data.BlockSerializer;
 import org.patonki.data.Classification;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 /**
  * An implementation of {@link Blocks}
  * that uses an Oct tree. Which is an algorithm used to reduce memory consumption of storing

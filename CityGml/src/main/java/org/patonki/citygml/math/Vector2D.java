@@ -46,9 +46,4 @@ public class Vector2D extends Point2D{
     public Vector2D multiply(double val) {
         return new Vector2D(x() * val, y() * val);
     }
-
-    public Vector2D rotate(double angle) {
-        Vector2D v = Vector2D.fromAngle(angle() + angle);
-        return v.multiply(len());
-    }
 }

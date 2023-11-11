@@ -1,7 +1,7 @@
 package org.patonki.serialize;
 
 import com.google.gson.Gson;
-import org.patonki.citygml.endpoint.GmlOptions;
+import org.patonki.citygml.citygml.GmlOptions;
 import org.patonki.color.ColorToBlockConverterOptions;
 import org.patonki.data.Block;
 import org.patonki.data.BoundingBox;

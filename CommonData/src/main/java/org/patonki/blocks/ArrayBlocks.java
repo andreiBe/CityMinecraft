@@ -6,7 +6,6 @@ import org.patonki.data.BlockSerializer;
 import org.patonki.data.Classification;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 

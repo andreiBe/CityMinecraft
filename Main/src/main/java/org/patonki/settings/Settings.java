@@ -1,6 +1,6 @@
 package org.patonki.settings;
 
-import org.patonki.citygml.endpoint.GmlOptions;
+import org.patonki.citygml.citygml.GmlOptions;
 import org.patonki.las.settings.LasReaderSettings;
 import org.patonki.openstreetmap.settings.OpenStreetMapSettings;
 
