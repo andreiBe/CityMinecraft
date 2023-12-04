@@ -1,5 +1,6 @@
 package org.patonki.blocks;
 
+import org.jetbrains.annotations.NotNull;
 import org.patonki.data.Block;
 
 /**
@@ -43,6 +44,8 @@ public class GroundLayer {
     public Block getBlock(int x, int y) {
         return ground[x][y].block;
     }
+
+    @NotNull
     public XYZBlock getXYZBlock(int x, int y) {
         return ground[x][y];
     }

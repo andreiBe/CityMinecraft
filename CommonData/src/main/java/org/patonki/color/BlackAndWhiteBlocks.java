@@ -1,6 +1,7 @@
 package org.patonki.color;
 
 import org.patonki.data.Block;
+import org.patonki.data.Classification;
 import org.patonki.util.Pair;
 
 import java.awt.image.BufferedImage;
@@ -11,7 +12,7 @@ public class BlackAndWhiteBlocks extends ColorBlockConverter {
     private final int[] colorsFastLookup = new int[MAX_COLOR];
 
     public BlackAndWhiteBlocks(String texturePath, ColorToBlockConverterOptions options) throws IOException {
-        super(texturePath, options, new Block[0]);
+        super(Classification.BUILDING, texturePath, options, new Block[0]);
         double[] distances = new double[colorsFastLookup.length];
         for (int i = 0; i < blockEntries.size(); i++) {
             var entry = blockEntries.get(i);

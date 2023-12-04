@@ -11,9 +11,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="CityGml" />
     <orderEntry type="module" module-name="CommonData" />
-    <orderEntry type="library" name="Maven: org.jetbrains:annotations:24.0.1" level="project" />
+    <orderEntry type="library" name="Maven: org.jetbrains:annotations:24.1.0" level="project" />
     <orderEntry type="module" module-name="OpenStreetMap" />
     <orderEntry type="library" name="Maven: org.geotools:gt-epsg-hsql:30-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: org.geotools:gt-referencing:30-SNAPSHOT" level="project" />
@@ -119,6 +118,7 @@
     <orderEntry type="library" name="Maven: org.glassfish.jaxb:xsom:4.0.2" level="project" />
     <orderEntry type="library" name="Maven: com.sun.xml.bind.external:relaxng-datatype:4.0.2" level="project" />
     <orderEntry type="library" name="Maven: org.xmlobjects:classindex:3.12.0" level="project" />
+    <orderEntry type="module" module-name="GroundColor" />
     <orderEntry type="library" name="Maven: org.apache.maven.plugins:maven-javadoc-plugin:maven-plugin:3.6.0" level="project" />
     <orderEntry type="library" name="Maven: javax.inject:javax.inject:1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.maven.reporting:maven-reporting-api:3.1.1" level="project" />

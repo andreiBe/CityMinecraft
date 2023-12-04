@@ -10,6 +10,7 @@ import org.patonki.citygml.citygml.GmlOptions;
 import org.patonki.citygml.features.Building;
 import org.patonki.citygml.features.BuildingCollection;
 import org.patonki.color.IColorToBlockConverter;
+import org.patonki.data.Classification;
 import org.patonki.util.ProgressLogger;
 
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ public class GmlFeaturesInArea {
         BuildingToCubes converter = new BuildingToCubes();
 
         IColorToBlockConverter colorConverter = switch (options.texturingType()) {
-            case USE_MINECRAFT_TEXTURES -> new ColorToMinecraftBlock(texturesPath, options.bannedBlocks(), options.colorConvert());
+            case USE_MINECRAFT_TEXTURES -> new ColorToMinecraftBlock(Classification.BUILDING, texturesPath, options.bannedBlocks(), options.colorConvert());
             case USE_GRAY_SCALE -> new BlackAndWhiteBlocks(texturesPath, options.blackAndWhiteColorOptions());
         };
 
@@ -45,6 +46,7 @@ public class GmlFeaturesInArea {
         ExecutorService executor = Executors.newFixedThreadPool(3);
         ArrayList<Future<Void>> futures = new ArrayList<>();
         for (Building building : collection.buildings()) {
+
             Future<Void> future = executor.submit(() -> {
                 try {
                     BlockLocations locations = converter.convert(building, oneColor, colorConverter);

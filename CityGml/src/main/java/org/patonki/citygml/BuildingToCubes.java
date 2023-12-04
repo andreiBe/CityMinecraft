@@ -59,12 +59,7 @@ public class BuildingToCubes {
         Polygon3D polygon = structure.getPolygon();
         //getting a color array of the polygon's texture
         //the texture can contain texture coordinates, which are handled by the textureReader
-        Block[][] colors;
-        try {
-            colors = textureReader.textureOfPolygon(polygon, colorConverter, oneColor);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        Block[][] colors = textureReader.textureOfPolygon(polygon, colorConverter, oneColor);
 
         ArrayList<BlockLocation> locations = new ArrayList<>();
 

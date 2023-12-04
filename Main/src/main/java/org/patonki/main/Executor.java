@@ -15,20 +15,25 @@ import java.util.function.Supplier;
 public class Executor {
     private final String lazFile;
     private final BlockSerializer serializer;
+    private final ExecutionStep[] cached;
     private Blocks blocks;
     private final ExecutionStep startStep;
     private final ExecutionStep endStep;
     private final ExecutionStep[] skipped;
     private final String cacheFolderPath;
-    
+
+    private final boolean startCacheExists;
     private static final Logger LOGGER = LogManager.getLogger(Executor.class);
-    public Executor(String lazFile, ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, String cacheFolderPath, BlockSerializer serializer) {
+
+    public Executor(String lazFile, ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, String cacheFolderPath, BlockSerializer serializer, ExecutionStep[] cached) {
         this.lazFile = lazFile;
         this.startStep = start;
         this.endStep = end;
         this.skipped = skipped;
+        this.cached = cached;
         this.cacheFolderPath = cacheFolderPath;
         this.serializer = serializer;
+        this.startCacheExists = getCacheFile(lazFile, startStep).exists();
     }
     private File getCacheFile(String lazFile, ExecutionStep step) {
         String withoutExtension = lazFile.substring(0, lazFile.lastIndexOf('.'));
@@ -56,41 +61,53 @@ public class Executor {
             throw e;
         }
     }
-    private boolean isIgnored(ExecutionStep step) {
+    private boolean shouldIgnore(ExecutionStep step) {
         return Arrays.stream(skipped).anyMatch(s -> s == step);
     }
 
-    public void execStart(Supplier<Blocks> supplier, ExecutionStep step) throws IOException {
-        if (isIgnored(step)) return;
+    private boolean shouldCache(ExecutionStep step) {
+        return Arrays.stream(cached).anyMatch(s -> s == step);
+    }
+    private interface Runnable {
+        void run() throws Exception;
+    }
+    private void execute(Runnable runnable, ExecutionStep step) throws Exception {
+        if (shouldIgnore(step)) {
+            LOGGER.info("Ignoring step: " + step.name());
+            return;
+        }
+        if (endStep.number < step.number) return;
 
-        if (startStep.number > step.number || endStep.number < step.number) {
+
+        if (startStep.number > step.number && startCacheExists) {
             return;
         }
-        if (startStep == step) {
+        if (startStep == step && startCacheExists) {
             this.blocks = getCachedBlocks(lazFile, startStep);
+            LOGGER.info("Step retrieved from cache: " + step.name());
             return;
         }
-        this.blocks = supplier.get();
-        if (endStep == step) {
+        runnable.run();
+
+        if (endStep == step || shouldCache(step) || startStep == step) {
             cacheBlocks(lazFile, endStep, blocks);
+            LOGGER.info("Step cached " + step.name());
         }
+        LOGGER.info("Step completed " + step.name());
     }
     public interface BlocksHandler {
         void handle(Blocks blocks) throws Exception;
     }
+    public void exec(Supplier<Blocks> supplier, ExecutionStep step) throws Exception {
+        execute(() -> {
+            this.blocks = supplier.get();
+        }, step);
+    }
+
 
     public void exec(BlocksHandler consumer, ExecutionStep step) throws Exception {
-        if (isIgnored(step)) return;
-        if (startStep.number > step.number || endStep.number < step.number) {
-            return;
-        }
-        if (startStep == step) {
-            this.blocks = getCachedBlocks(lazFile, startStep);
-            return;
-        }
-        consumer.handle(blocks);
-        if (endStep == step) {
-            cacheBlocks(lazFile, endStep, blocks);
-        }
+        execute(() -> {
+            consumer.handle(blocks);
+        }, step);
     }
 }

@@ -89,25 +89,22 @@ public class OsmFeaturesToMinecraft {
             for (int y = 0; y < blocks.getLength(); y++) {
                 Waterway waterway = findFeatureAtCoordinate(x, y, valid_waterways);
                 if (waterway == null) continue;
-                fillWater(x, y, groundLayer);
+                fillWater(x, y, groundLayer, waterway.block());
             }
         }
     }
-    private void fillWater(int xo, int yo, GroundLayer groundLayer) {
+    private void fillWater(int xo, int yo, GroundLayer groundLayer, Block waterBlock) {
         int radius = 5;
         int minZ = Integer.MAX_VALUE;
         ArrayList<XYZBlock> bottomLayer = new ArrayList<>();
-        ArrayList<XYZBlock> noGround = new ArrayList<>();
+
         for (int x = xo-radius; x <= xo+radius; x++) {
             for (int y = yo-radius; y <= yo+radius; y++) {
-                if (x < 0 || y < 0 || x >= groundLayer.getWidth() || y >= groundLayer.getLength()) continue;
+                if (!groundLayer.inRange(x,y)) continue;
                 XYZBlock i = groundLayer.getXYZBlock(x,y);
-                if (i == null) {
-                    noGround.add(new XYZBlock(x,y, minZ, null));
-                    continue;
-                }
                 if (i.z() < minZ) {
                     minZ = i.z();
+                    if (i.block().classification() == Classification.WATER) minZ--;
                     bottomLayer.clear();
                 }
                 if (i.z() == minZ) {
@@ -115,9 +112,9 @@ public class OsmFeaturesToMinecraft {
                 }
             }
         }
-        bottomLayer.addAll(noGround);
+
         for (XYZBlock XYZBlock : bottomLayer) {
-            blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, new Block((byte) 22, (byte) 0, Classification.WATER));
+            blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, waterBlock);
         }
     }
     private void applyRoads() {

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.patonki.citygml.citygml.CityGmlDownloader;
-import org.patonki.citygml.citygml.CityGmlEndpoint;
 import org.patonki.data.IntBoundingBox;
 import org.patonki.openstreetmap.FeatureFilterer;
 
@@ -28,21 +27,27 @@ public class Downloader {
     }
 
     public record LasDownloadSettings(String lasDataPath,
-                                      int stepMeter, IntBoundingBox box, String lasFormat) {}
+                                      int stepMeter, IntBoundingBox[] boxes, String lasFormat) {}
+    public record AerialDownloadSettings(String aerialDataPath, int stepMeter, IntBoundingBox[] boxes) {}
 
     public record OsmDownloadSettings(String osmDataPath, FeatureFilterer.FeatureFiltererOptions filterOptions) {}
 
-    public record GmlDownloadSettings(String gmlDataPath, String gmlVersion, int stepMeter, IntBoundingBox box) {}
-    public record DownloadSettings(LasDownloadSettings lasSettings, OsmDownloadSettings osmSettings, GmlDownloadSettings gmlSettings) {
+    public record GmlDownloadSettings(String gmlDataPath, String gmlVersion, int stepMeter, IntBoundingBox[] boxes) {}
+    public record DownloadSettings(LasDownloadSettings lasSettings, AerialDownloadSettings aerialSettings,
+                                   OsmDownloadSettings osmSettings, GmlDownloadSettings gmlSettings) {
     }
-    public void download(boolean las, boolean osm, boolean gml,
-                         String lasDownloadFolder, String osmDownloadFolder, String gmlDownloadFolder, String texturePackFolder, String minecraftWorldFolder,
+    public void download(boolean las, boolean osm, boolean gml, boolean aerial,
+                         String lasDownloadFolder, String aerialDownloadFolder, String osmDownloadFolder, String gmlDownloadFolder,
+                         String texturePackFolder, String minecraftWorldFolder,
                          String[] unfilteredShapefileLocations, String filteredInputDataPath) {
         if (osm) {
             downloadOsmData(settings.osmSettings(), osmDownloadFolder, unfilteredShapefileLocations, filteredInputDataPath);
         }
         if (las) {
             downloadLasData(settings.lasSettings(), lasDownloadFolder);
+        }
+        if (aerial) {
+            downloadAerialData(settings.aerialSettings(), aerialDownloadFolder);
         }
         if (gml) {
             downloadGmlData(settings.gmlSettings(), gmlDownloadFolder, texturePackFolder);
@@ -64,7 +69,7 @@ public class Downloader {
     }
 
 
-    private static void downloadFile(String path, String resultPath) {
+    private static void downloadFileFromInternet(String path, String resultPath) {
         try (BufferedInputStream in = new BufferedInputStream(new URL(path).openStream());
              FileOutputStream fileOutputStream = new FileOutputStream(resultPath)) {
             byte[] dataBuffer = new byte[1024];
@@ -73,34 +78,70 @@ public class Downloader {
                 fileOutputStream.write(dataBuffer, 0, bytesRead);
             }
         } catch (FileNotFoundException e) {
-            LOGGER.error("Not found " + resultPath);
+            LOGGER.error("Not found " + resultPath + " from url: " + path);
         } catch (IOException e) {
-            e.printStackTrace();
-            // handle exception
+            LOGGER.error(e);
+            //TODO handle exception
         }
     }
+    private interface DownloadArea {
+        void download(int x, int y);
+    }
 
+    private void downloadAreas(IntBoundingBox[] boxes, int step, DownloadArea func) {
+        for (IntBoundingBox box : boxes) {
+            downloadArea(box, step, func);
+        }
+    }
+    private void downloadArea(IntBoundingBox box, int step, DownloadArea func) {
+        int smallestX = box.minX();
+        int smallestY = box.minY();
+        int largestX = box.maxX();
+        int largestY = box.maxY();
+        for (int x = smallestX; x <= largestX; x += step) {
+            for (int y = smallestY; y <= largestY; y += step) {
+                func.download(x,y);
+            }
+        }
+    }
+    private void downloadAerialData(AerialDownloadSettings settings, String aerialDownloadFolder) {
+        File dataFolder = new File(aerialDownloadFolder);
+        dataFolder.mkdirs();
+
+        downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
+            String outputPath = aerialDownloadFolder + "/" + x + "_"+y+".png";
+
+            String url = settings.aerialDataPath()
+                    .replace("$XMIN", x+"")
+                    .replace("$YMIN", y+"")
+                    .replace("$XMAX", (x+settings.stepMeter())+"")
+                    .replace("$YMAX", (y+settings.stepMeter())+"")
+                    .replace("$WIDTH", settings.stepMeter()+"")
+                    .replace("$HEIGHT", settings.stepMeter()+"");
+
+            if (new File(outputPath).exists()) {
+                LOGGER.info("Aerial image downloaded from " + url + " already exists!");
+                return;
+            }
+            LOGGER.info("Downloading aerial image: " + url);
+            downloadFileFromInternet(url, outputPath);
+        });
+    }
     private void downloadLasData(LasDownloadSettings settings, String lasDownloadFolder) {
         File dataFolder = new File(lasDownloadFolder);
         dataFolder.mkdirs();
-        int smallestX = settings.box().minX();
-        int smallestY = settings.box().minY();
-        int largestX = settings.box().maxX();
-        int largestY = settings.box().maxY();
-        for (int x = smallestX; x <= largestX; x += settings.stepMeter()) {
-            for (int y = smallestY; y <= largestY; y += settings.stepMeter()) {
-                String downloadFilePath = settings.lasDataPath() + "/" + settings.lasFormat()
-                        .replace("$X", x + "")
-                        .replace("$Y", y + "");
-                String resultPath = lasDownloadFolder + "/" + x + "_" + y + ".laz";
-                if (new File(resultPath).exists()) {
-                    LOGGER.info("Las file downloaded from " + downloadFilePath + " already exists!");
-                    continue;
-                }
-                LOGGER.info("Downloading las file: " + downloadFilePath);
-                downloadFile(downloadFilePath, resultPath);
+        downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
+            String downloadFilePath = settings.lasDataPath() + "/" + settings.lasFormat()
+                    .replace("$X", x + "")
+                    .replace("$Y", y + "");
+            String resultPath = lasDownloadFolder + "/" + x + "_" + y + ".laz";
+            if (new File(resultPath).exists()) {
+                LOGGER.info("Las file downloaded from " + downloadFilePath + " already exists!");
+                return;
             }
-        }
+            LOGGER.info("Downloading las file: " + downloadFilePath);
+            downloadFileFromInternet(downloadFilePath, resultPath);
+        });
     }
     private static class MojangResponse {
         public String tag_name;
@@ -135,21 +176,15 @@ public class Downloader {
         }
         CityGmlDownloader downloader = new CityGmlDownloader(gmlDownloadFolder);
 
-        int smallestX = settings.box().minX();
-        int smallestY = settings.box().minY();
-        int largestX = settings.box().maxX();
-        int largestY = settings.box().maxY();
-        for (int x = smallestX; x <= largestX; x += settings.stepMeter()) {
-            for (int y = smallestY; y <= largestY; y += settings.stepMeter()) {
-                LOGGER.info("Downloading gml area " + x + "," + y + " to " +(x + settings.stepMeter()) + "," + (y + settings.stepMeter()));
-                try {
-                    downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(), settings.gmlVersion());
-                } catch (IOException e) {
-                    LOGGER.error("Error while downloading CityGml buildings");
-                    LOGGER.error(e);
-                }
+        downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
+            LOGGER.info("Downloading gml area " + x + "," + y + " to " +(x + settings.stepMeter()) + "," + (y + settings.stepMeter()));
+            try {
+                downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(), settings.gmlVersion());
+            } catch (IOException e) {
+                LOGGER.error("Error while downloading CityGml buildings");
+                LOGGER.error(e);
             }
-        }
+        });
     }
     private void downloadZipToFolder(String downloadFolderPath, String urlPath) {
         File downloadFolder = new File(downloadFolderPath);

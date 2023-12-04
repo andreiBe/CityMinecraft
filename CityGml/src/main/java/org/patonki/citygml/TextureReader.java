@@ -16,6 +16,7 @@ import org.patonki.data.Block;
 import org.patonki.data.BoundingBox;
 import org.patonki.color.Color;
 import org.patonki.color.IColorToBlockConverter;
+import org.patonki.util.ImageUtil;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -164,15 +165,14 @@ public class TextureReader {
     }
     private int[][] getAutoLeveledImage(String texturePath) throws IOException {
         File autoLeveled = getAutoleveledImageFile(texturePath);
-        int[][] colors;
         if (autoLeveled.exists()) {
-            colors = convertImageTo2DArray(autoLeveled.getPath());
+            return ImageUtil.convertImageTo2DArray(autoLeveled.getPath());
         } else {
-            colors = convertImageTo2DArray(texturePath);
+            int[][] colors = ImageUtil.convertImageTo2DArray(texturePath);
             ImageAutoLevel.autoLevel(colors);
             generateImg(colors, autoLeveled.getPath());
+            return colors;
         }
-        return colors;
     }
     private int[][] reverseYCoordinate(int[][] colors) {
         int[][] newColors = new int[colors.length][colors[0].length];
@@ -181,7 +181,7 @@ public class TextureReader {
         }
         return newColors;
     }
-    public Block[][] textureOfPolygon(Polygon3D polygon, IColorToBlockConverter converter, boolean wallOneColor) throws IOException {
+    public Block[][] textureOfPolygon(Polygon3D polygon, IColorToBlockConverter converter, boolean wallOneColor) {
         boolean debug = false;
         var voxelBBox = polygon.getBBox2DVoxel();
         int w = voxelBBox.w();
@@ -190,7 +190,13 @@ public class TextureReader {
         if (!(polygon.getTexture() instanceof ImgTexture texture)) return createDefault(w, h, converter);
         if (texture.getCoordinates().length < 3) {return createDefault(w,h, converter);}
 
-        int[][] colors = getAutoLeveledImage(texture.getImgPath());
+        int[][] colors;
+        try {
+            colors = getAutoLeveledImage(texture.getImgPath());
+        } catch (IOException e) {
+            LOGGER.error(e);
+            return createDefault(w,h,converter);
+        }
         var ret = new Block[w][h];
 
         int imageHeight = colors.length;
@@ -246,51 +252,7 @@ public class TextureReader {
         return wallOneColor ? createDefault(w,h, counterAll.getMostCommon()) : ret;
     }
 
-    //stolen from https://stackoverflow.com/a/17175454
-    public static int[][] convertImageTo2DArray(String imagePath) throws IOException {
-        BufferedImage image = imagePath.startsWith("/") ? ImageIO.read(Objects.requireNonNull(TextureReader.class.getResourceAsStream(imagePath)))
-                : ImageIO.read(new File(imagePath));
 
-        final byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-        final int width = image.getWidth();
-        final int height = image.getHeight();
-        final boolean hasAlphaChannel = image.getAlphaRaster() != null;
-
-        int[][] result = new int[height][width];
-        if (hasAlphaChannel) {
-            final int pixelLength = 4;
-            for (int pixel = 0, row = 0, col = 0; pixel + 3 < pixels.length; pixel += pixelLength) {
-                int argb = 0;
-                argb += (((int) pixels[pixel] & 0xff) << 24); // alpha
-                argb += ((int) pixels[pixel + 1] & 0xff); // blue
-                argb += (((int) pixels[pixel + 2] & 0xff) << 8); // green
-                argb += (((int) pixels[pixel + 3] & 0xff) << 16); // red
-                result[row][col] = argb;
-                col++;
-                if (col == width) {
-                    col = 0;
-                    row++;
-                }
-            }
-        } else {
-            final int pixelLength = 3;
-            for (int pixel = 0, row = 0, col = 0; pixel + 2 < pixels.length; pixel += pixelLength) {
-                int argb = 0;
-                argb -= 16777216; // 255 alpha
-                argb += ((int) pixels[pixel] & 0xff); // blue
-                argb += (((int) pixels[pixel + 1] & 0xff) << 8); // green
-                argb += (((int) pixels[pixel + 2] & 0xff) << 16); // red
-                result[row][col] = argb;
-                col++;
-                if (col == width) {
-                    col = 0;
-                    row++;
-                }
-            }
-        }
-
-        return result;
-    }
 
     private static void generateImg(int[][] blocks, String path) {
         BufferedImage img = new BufferedImage(blocks[0].length, blocks.length, BufferedImage.TYPE_INT_ARGB);
@@ -301,10 +263,14 @@ public class TextureReader {
             }
         }
         try {
-            ImageIO.write(img, path.substring(path.lastIndexOf('.')+1), new File(path));
+            String format = "png";
+            boolean success = ImageIO.write(img, format, new File(path));
+            if (!success) {
+                LOGGER.error("Failed writing img of format " + format + " to path " + path);
+            }
         } catch (IOException e) {
             System.out.println("FAILED " + path);
-            e.printStackTrace();
+            LOGGER.error(e);
         }
     }
 

@@ -34,6 +34,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Reads CityGml files and returns Building Objects
@@ -66,8 +67,7 @@ public class CityGmlParser {
      * @param uri path to image
      * @return the local path where the image is located after downloading
      */
-
-    private String loadImage(String uri) {
+    private Optional<String> loadImage(String uri) {
         String name = uri;
         int slashIndex = uri.lastIndexOf('/');
         if (slashIndex != -1) {
@@ -76,7 +76,7 @@ public class CityGmlParser {
         String path = imgDownloadLocation + "/" + name;
         File file = new File(path);
         //already downloaded
-        if (file.exists()) return path;
+        if (file.exists()) return Optional.of(path);
         //downloads the file and writes it to local file
         try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
              FileOutputStream fileOutputStream = new FileOutputStream(path)) {
@@ -86,9 +86,10 @@ public class CityGmlParser {
                 fileOutputStream.write(dataBuffer, 0, bytesRead);
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Failed writing file! " + path);
+            LOGGER.error("Error downloading texture image from " + uri + " to " + path + " error message: " + e.getMessage());
+            return Optional.empty();
         }
-        return path;
+        return Optional.of(path);
     }
 
     /**
@@ -139,7 +140,7 @@ public class CityGmlParser {
         @Override
         public void visit(ParameterizedTexture texture) {
             String imgUri = texture.getImageURI();
-            imgUri = loadImage(imgUri);
+            Optional<String> imagePath = loadImage(imgUri);
             //the referenced structures of the texture
             List<TextureAssociationProperty> associations = texture.getTextureParameterizations();
             for (TextureAssociationProperty associationProperty : associations) {
@@ -161,7 +162,13 @@ public class CityGmlParser {
                 AbstractGeometry refObj = association.getTarget().getReferencedObject();
                 if (refObj == null) return;
                 String id = refObj.getId();
-                textureMap.put(id, new ImgTexture(imgUri, coordinates));
+
+                if (imagePath.isEmpty()) {
+                    //default
+                    textureMap.put(id, new Material(255,255,255));
+                } else {
+                    textureMap.put(id, new ImgTexture(imagePath.get(), coordinates));
+                }
             }
         }
     }

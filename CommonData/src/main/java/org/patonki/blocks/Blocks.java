@@ -147,7 +147,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
         if (hasClassification(x, y, z+1,classification)) sum++;
         return sum;
     }
-    private boolean hasClassification(int x, int y, int z, Classification classification) {
+    public boolean hasClassification(int x, int y, int z, Classification classification) {
         Block block = get(x,y,z);
         return block != null && block.classification() == classification;
     }
@@ -244,6 +244,10 @@ public abstract class Blocks implements Iterable<XYZBlock>{
         return new GroundLayer(getGroundLayerIncomplete());
     }
 
+    private boolean isGroundBlock(Block block) {
+        if (block == null) return false;
+        return block.classification() == Classification.GROUND || block.classification() == Classification.WATER;
+    }
     /**
      * Finds the highest ground block {@link Classification#GROUND} in each (x,y) column.
      * However, the 2d array may contain null values if the column does not have any ground blocks.
@@ -257,9 +261,9 @@ public abstract class Blocks implements Iterable<XYZBlock>{
             for (int y = 0; y < getLength(); y++) {
                 for (int z = getHeight()-1; z >= 0; z--) {
                     Block block = get(x,y,z);
-                    if (block != null && block.classification() == Classification.GROUND) {
+                    if (isGroundBlock(block)) {
                         ar[x][y] = new XYZBlock(x,y,z, block);
-                        break;
+                        break; //the highest block has been found
                     }
                 }
             }

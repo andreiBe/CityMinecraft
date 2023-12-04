@@ -59,6 +59,7 @@
         <module>WorldDecorator</module>
         <module>Main</module>
         <module>CityGml</module>
+        <module>GroundColor</module>
     </modules>
 
     <dependencies>

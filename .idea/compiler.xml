@@ -13,6 +13,7 @@
       <module name="CityGml" target="17" />
       <module name="CommonData" target="17" />
       <module name="Data" target="17" />
+      <module name="GroundColor" target="17" />
       <module name="LAS" target="17" />
       <module name="Main" target="17" />
       <module name="MinecraftSchematic" target="17" />

@@ -1,6 +1,7 @@
 package org.patonki.citygml;
 
 import org.patonki.blocks.Blocks;
+import org.patonki.blocks.GroundLayer;
 import org.patonki.blocks.XYZBlock;
 import org.patonki.citygml.citygml.BlockLocation;
 import org.patonki.citygml.citygml.BlockLocations;
@@ -60,6 +61,8 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
         }
     }
     private void acceptLocations(BlockLocations locations) {
+        GroundLayer groundLayer = blocks.getGroundLayer();
+
         if (locations.getLocations().size() == 0) return;
 
         BoundingBox3D boundingBox = locations.getBoundingBox();
@@ -91,7 +94,8 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
             Block b = new Block(location.id(), location.data(), Classification.BUILDING);
             Block previousBlock = blocks.get(x,y,z);
             //do not replace ground blocks
-            if (previousBlock == null || previousBlock.classification() != Classification.GROUND) {
+            if (groundLayer.inRange(x,y) && groundLayer.getXYZBlock(x,y).z() != z
+                    && (previousBlock == null || previousBlock.classification() != Classification.GROUND)) {
                 blocks.set(x,y,z, b);
             }
         }
@@ -107,6 +111,8 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
                 }
             }
         }
+
+        blocks.getGroundLayer();
     }
     @Override
     public void accept(BlockLocations locations) {

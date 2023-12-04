@@ -45,6 +45,7 @@ public class ArrayBlocks extends Blocks {
         if (!inRange(x,y,z)) return false;
 
         Byte index = ids.get(block);
+
         if (index == null) { //new block
             byte size = (byte) (ids.size() + 1);
             ids.put(block, size);
@@ -213,8 +214,8 @@ public class ArrayBlocks extends Blocks {
                 for (int y = 0; y < blocks.length; y++) {
                     for (int z = 0; z < blocks.height; z++) {
                         int index = blocks.pos(x,y,z);
-                        index += i;
                         byte block = blocks.blocks[index];
+                        index += i;
                         serialized[index] = block;
                     }
                 }

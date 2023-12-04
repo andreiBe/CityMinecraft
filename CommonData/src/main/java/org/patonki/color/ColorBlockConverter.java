@@ -23,11 +23,13 @@ public abstract class ColorBlockConverter implements IColorToBlockConverter {
 
     private static final Logger LOGGER = LogManager.getLogger(ColorBlockConverter.class);
 
-    public ColorBlockConverter(String texturePath, ColorToBlockConverterOptions options, Block[] banned) throws IOException {
+    private final Classification classification;
+
+    public ColorBlockConverter(Classification classification, String texturePath, ColorToBlockConverterOptions options, Block[] banned) throws IOException {
+        this.classification = classification;
         this.blockEntries = readBlockEntries(texturePath, options);
         this.blockEntries.removeIf(be -> Arrays.stream(banned).anyMatch(b -> b.id() == be.block.id() && b.data() == be.block.data()));
     }
-
     private ArrayList<BlockEntry> readBlockEntries(String texturePath, ColorToBlockConverterOptions options) throws IOException {
         ArrayList<BlockEntry> res = new ArrayList<>();
         for (IColorToBlockConverter.BlockEntry blockEntry : options.blockEntries()) {
@@ -40,7 +42,7 @@ public abstract class ColorBlockConverter implements IColorToBlockConverter {
             Color average = averageColorOfImage(image);
 
             res.add(new BlockEntry(blockEntry.group(),
-                    new Block((byte) blockEntry.id(), (byte) blockEntry.data(), Classification.BUILDING),
+                    new Block((byte) blockEntry.id(), (byte) blockEntry.data(),this.classification),
                     average, image));
         }
         if (res.size() == 0) {

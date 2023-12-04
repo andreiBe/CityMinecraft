@@ -32,6 +32,8 @@ public class Main {
     private static final String FILTERED_WATERWAYS_LOCATION = FILTERED_INPUT_DATA_FOLDER+"/" + WATERWAYS_FILE_NAME;
     private static final String LAS_FILE_DOWNLOAD_LOCATION = INPUT_DATA_FOLDER+"/lasFiles";
 
+    private static final String AERIAL_FILE_DOWNLOAD_LOCATION = INPUT_DATA_FOLDER +"/aerial";
+
     private static final String GML_DOWNLOAD_FOLDER = INPUT_DATA_FOLDER + "/citygml";
 
     private static final String TEXTURE_PACK_DOWNLOAD_FOLDER = INPUT_DATA_FOLDER;
@@ -59,12 +61,14 @@ public class Main {
         setLogLevel(Level.DEBUG);
         String lazFileFolder = args[0];
 
+        args = Arrays.copyOfRange(args, 1, args.length);
         CommandLineArgs commandLineArgs = readCommandLineArguments(args);
         try {
             WorldBuilder.runAll(settings,
-                    commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped,
+                    commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped,commandLineArgs.cached,
                     lazFileFolder,
                     CACHE_FILE_LOCATION,
+                    AERIAL_FILE_DOWNLOAD_LOCATION,
                     FILTERED_LAND_USE_LOCATION,
                     FILTERED_ROADS_LOCATION,
                     FILTERED_WATERWAYS_LOCATION,
@@ -76,32 +80,43 @@ public class Main {
             e.printStackTrace();
         }
     }
-    private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, boolean copyToMinecraft){}
+    private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, ExecutionStep[] cached, boolean copyToMinecraft){}
     private static CommandLineArgs readCommandLineArguments(String[] args) {
         ExecutionStep start = ExecutionStep.BEGINNING;
         ExecutionStep end = ExecutionStep.END;
         ExecutionStep[] skipped = new ExecutionStep[0];
+        ExecutionStep[] cached = new ExecutionStep[0];
         boolean copyToMinecraftWorld = false;
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
-            if (arg.equals("--start")) {
-                String nextArg = args[i+1];
-                start = ExecutionStep.valueOf(nextArg);
-            }
-            if (arg.equals("--end")) {
-                String nextArg = args[i+1];
-                end = ExecutionStep.valueOf(nextArg);
-            }
-            if (arg.equals("--skip")) {
-                String nextArg = args[i+1];
-                String[] skippedSteps = nextArg.split(",");
-                skipped = Arrays.stream(skippedSteps).map(ExecutionStep::valueOf).toArray(ExecutionStep[]::new);
-            }
-            if (arg.equals("--copy")) {
-                copyToMinecraftWorld = true;
+            switch (arg) {
+                case "--start" -> {
+                    String nextArg = args[i + 1];
+                    start = ExecutionStep.valueOf(nextArg);
+                    i++;
+                }
+                case "--end" -> {
+                    String nextArg = args[i + 1];
+                    end = ExecutionStep.valueOf(nextArg);
+                    i++;
+                }
+                case "--skip" -> {
+                    String nextArg = args[i + 1];
+                    String[] skippedSteps = nextArg.split(",");
+                    skipped = Arrays.stream(skippedSteps).map(ExecutionStep::valueOf).toArray(ExecutionStep[]::new);
+                    i++;
+                }
+                case "--cache" -> {
+                    String nextArg = args[i + 1];
+                    String[] cachedSteps = nextArg.split(",");
+                    cached = Arrays.stream(cachedSteps).map(ExecutionStep::valueOf).toArray(ExecutionStep[]::new);
+                    i++;
+                }
+                case "--copy" -> copyToMinecraftWorld = true;
+                default -> LOGGER.warn("Unknown cmd argument: " + arg);
             }
         }
-        return new CommandLineArgs(start, end, skipped, copyToMinecraftWorld);
+        return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld);
     }
     private static void runTest(String options, String[] args) throws IOException {
         LOGGER.debug("Running test");
@@ -111,15 +126,17 @@ public class Main {
 
         String lazFile = args[0];
 
+        args = Arrays.copyOfRange(args, 1, args.length);
         CommandLineArgs commandLineArgs = readCommandLineArguments(args);
         try {
             WorldBuilder.runSingle(settings,
-                    commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped,
+                    commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped, commandLineArgs.cached,
                     lazFile,
                     CACHE_FILE_LOCATION,
                     MINECRAFT_SCHEMATIC_OUTPUT_PATH,
                     TEMPLATE_MINECRAFT_WORLD,
                     GML_DOWNLOAD_FOLDER,
+                    AERIAL_FILE_DOWNLOAD_LOCATION,
                     FILTERED_LAND_USE_LOCATION,
                     FILTERED_ROADS_LOCATION,
                     FILTERED_WATERWAYS_LOCATION, TEXTURE_PACK_FOLDER,
@@ -133,17 +150,19 @@ public class Main {
         boolean downloadLaz = false;
         boolean downloadOsm = false;
         boolean downloadGml = false;
+        boolean downloadAerial = false;
         for (String arg : args) {
             switch (arg) {
                 case "-las" -> downloadLaz = true;
                 case "-osm" -> downloadOsm = true;
                 case "-gml" -> downloadGml = true;
+                case "-aerial" -> downloadAerial = true;
             }
         }
         Downloader.DownloadSettings settings = JsonSerializer.deserializeFromFile(options, Downloader.DownloadSettings.class);
         Downloader downloader = new Downloader(settings);
-        downloader.download(downloadLaz,downloadOsm,downloadGml,
-                LAS_FILE_DOWNLOAD_LOCATION, SHAPE_FILE_DOWNLOAD_LOCATION,GML_DOWNLOAD_FOLDER, TEXTURE_PACK_DOWNLOAD_FOLDER, TEMPLATE_MINECRAFT_WORLD,
+        downloader.download(downloadLaz,downloadOsm,downloadGml,downloadAerial,
+                LAS_FILE_DOWNLOAD_LOCATION, AERIAL_FILE_DOWNLOAD_LOCATION, SHAPE_FILE_DOWNLOAD_LOCATION,GML_DOWNLOAD_FOLDER, TEXTURE_PACK_DOWNLOAD_FOLDER, TEMPLATE_MINECRAFT_WORLD,
                 UNFILTERED_SHAPEFILE_LOCATIONS, FILTERED_INPUT_DATA_FOLDER);
     }
     private static void createTemplates() {

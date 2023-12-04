@@ -8,6 +8,7 @@ import org.patonki.data.BoundingBox;
 import org.patonki.data.Classification;
 import org.patonki.data.IntBoundingBox;
 import org.patonki.downloader.Downloader;
+import org.patonki.groundcolor.GroundColorSettings;
 import org.patonki.openstreetmap.FeatureFilterer;
 import org.patonki.openstreetmap.settings.LandUseInfo;
 import org.patonki.openstreetmap.settings.OpenStreetMapSettings;
@@ -188,20 +189,27 @@ public class JsonSerializer {
 
         ColorToBlockConverterOptions colorOptions = colorOptions();
         ColorToBlockConverterOptions blackAndWhiteColorOptions = blackAndWhiteColorOptions();
+        ColorToBlockConverterOptions groundColorColorOptions = groundColorOptions();
+
+        LasReaderSettings lasReaderSettings = new LasReaderSettings(iMap, blockMap, roofBlock, ignored, useOctTree);
+        OpenStreetMapSettings openStreetMapSettings = new OpenStreetMapSettings(
+                "EPSG:3877",
+                "EPSG:4326",
+                true, true, true,
+                roads, landUse, waterways);
+
         GmlOptions gmlOptions = new GmlOptions(
                 GmlOptions.TexturingType.USE_MINECRAFT_TEXTURES,
                 GmlOptions.ColoringType.ALL_DIFFERENT,
                 new Block[0], colorOptions, blackAndWhiteColorOptions, false);
 
-        Settings options = new Settings(
-                new LasReaderSettings(iMap, blockMap, roofBlock, ignored, useOctTree),
-                new OpenStreetMapSettings(
-                        "EPSG:3877",
-                        "EPSG:4326",
-                        true, true, true,
-                        roads, landUse, waterways),
-                gmlOptions);
-        saveTemplate(options, templateFolder + "/run-options-template.json");
+        GroundColorSettings groundColorSettings = new GroundColorSettings(groundColorColorOptions, new Block(2,0,Classification.GROUND), new Block(1,5,Classification.GROUND));
+        Settings settings = new Settings(
+                lasReaderSettings,
+                openStreetMapSettings,
+                gmlOptions,
+                groundColorSettings,3);
+        saveTemplate(settings, templateFolder + "/run-options-template.json");
     }
 
     private static ColorToBlockConverterOptions groundColorOptions() {
@@ -337,12 +345,16 @@ public class JsonSerializer {
     private static void downloadOptions(String templateFolder) {
         Downloader.LasDownloadSettings las = new Downloader.LasDownloadSettings(
                 "https://opaskartta.turku.fi/3d/pistepilvi/",
-                500, new IntBoundingBox(23449500, 6692500, 23465000, 6710000),
+                500, new IntBoundingBox[] {
+                        new IntBoundingBox(23449500, 6692500, 23466000, 6713000),
+                        new IntBoundingBox(23460000,6713500, 	23469000,6723000),
+                        new IntBoundingBox(	23465500,6723500, 	23470000,6736500)
+                },
                 "$X_$Y.laz"
         );
         FeatureFilterer.FeatureFiltererOptions filterOptions = new FeatureFilterer.FeatureFiltererOptions(
                 "EPSG:4326", "EPSG:3877", new BoundingBox(
-                23450000, 6693000, 23469000, 6730500)
+                23440000, 6690000, 23472000, 6739500)
         );
         Downloader.OsmDownloadSettings osm = new Downloader.OsmDownloadSettings(
                 "http://download.geofabrik.de/europe/finland-latest-free.shp.zip", filterOptions
@@ -356,9 +368,32 @@ public class JsonSerializer {
 
 
         Downloader.GmlDownloadSettings gml = new Downloader.GmlDownloadSettings(gmlUrl, "3.1.1", 500,
-                new IntBoundingBox(23459500, 6704500, 23459500 + 500, 6704500 + 500));
+                new IntBoundingBox[] {
+                        new IntBoundingBox(23449500, 6692000, 23466000, 6713000),
+                        new IntBoundingBox(23460000,6713500, 	23469000,6723000),
+                        new IntBoundingBox(	23465500,6723500, 	23470000,6736500)
+                });
+        //https://docs.geoserver.org/2.23.x/en/user/services/wms/reference.html
+        String aerialUrl = "https://opaskartta.turku.fi/TeklaOGCWeb/WMS.ashx" +
+                "?service=WMS&" +
+                "request=GetMap&" +
+                "layers=Ilmakuva%202022%20True%20ortho&" +
+                "srs=EPSG:3877&" +
+                "bbox=$XMIN,$YMIN,$XMAX,$YMAX&" +
+                "version=1.1.1&" +
+                "format=image%2Fpng&" +
+                "width=$WIDTH&" +
+                "height=$HEIGHT&";
+        Downloader.AerialDownloadSettings aerial = new Downloader.AerialDownloadSettings(
+            aerialUrl, 500,
+                new IntBoundingBox[] {
+                        new IntBoundingBox(23449500, 6692000, 23466000, 6713000),
+                        new IntBoundingBox(23460000,6713500, 	23469000,6723000),
+                        new IntBoundingBox(	23465500,6723500, 	23470000,6736500)
+                }
+        );
         Downloader.DownloadSettings options = new Downloader.DownloadSettings(
-                las, osm, gml
+                las, aerial,osm, gml
         );
         saveTemplate(options, templateFolder + "/download-template.json");
     }

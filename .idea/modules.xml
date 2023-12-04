@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CityGml/CityGml.iml" filepath="$PROJECT_DIR$/CityGml/CityGml.iml" />
       <module fileurl="file://$PROJECT_DIR$/CommonData/CommonData.iml" filepath="$PROJECT_DIR$/CommonData/CommonData.iml" />
+      <module fileurl="file://$PROJECT_DIR$/GroundColor.iml" filepath="$PROJECT_DIR$/GroundColor.iml" />
       <module fileurl="file://$PROJECT_DIR$/LAS/LAS.iml" filepath="$PROJECT_DIR$/LAS/LAS.iml" />
       <module fileurl="file://$PROJECT_DIR$/Main/Main.iml" filepath="$PROJECT_DIR$/Main/Main.iml" />
       <module fileurl="file://$PROJECT_DIR$/MinecraftSchematic/MinecraftSchematic.iml" filepath="$PROJECT_DIR$/MinecraftSchematic/MinecraftSchematic.iml" />

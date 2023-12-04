@@ -2,6 +2,7 @@ package org.patonki.color;
 
 
 import org.patonki.data.Block;
+import org.patonki.data.Classification;
 import org.patonki.util.Pair;
 
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 public class ColorToMinecraftBlock extends ColorBlockConverter{
     private static final int MAX_COLOR = 255;
     private static final int STEP = MAX_COLOR;
+
     private final byte[] colorsFastLookup = new byte[MAX_COLOR * MAX_COLOR * MAX_COLOR + MAX_COLOR * MAX_COLOR + MAX_COLOR + 1];
 
     private int location(int r, int g, int b) {
@@ -18,8 +20,9 @@ public class ColorToMinecraftBlock extends ColorBlockConverter{
     private int cc(int c) {
         return (int) ((c / 255.0) * MAX_COLOR);
     }
-    public ColorToMinecraftBlock(String texturePath, Block[] banned, ColorToBlockConverterOptions options) throws IOException {
-        super(texturePath, options, banned);
+    public ColorToMinecraftBlock(Classification classification, String texturePath, Block[] banned, ColorToBlockConverterOptions options) throws IOException {
+        super(classification, texturePath, options, banned);
+
         double[] distances = new double[colorsFastLookup.length];
 
         Arrays.fill(colorsFastLookup, (byte)-1);

@@ -1,6 +1,8 @@
 package org.patonki.waterways;
 
 import org.patonki.FeatureReader;
+import org.patonki.data.Block;
+import org.patonki.data.Classification;
 import org.patonki.openstreetmap.settings.WaterwayInfo;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -28,7 +30,7 @@ public class WaterwayReader extends FeatureReader<Waterway, WaterWayType, Waterw
         String name = (String) feature.getAttribute("name");
         width = Math.max(width, 1);
         Polygon pol = pointsToPolygon(feature.geometry(), width);
-        return new Waterway( width, WaterWayType.matchingType(type_string), name, pol);
+        return new Waterway( width, WaterWayType.matchingType(type_string), name, pol, new Block(22, 0, Classification.WATER));
     }
 
 }

@@ -11,6 +11,7 @@ module Main {
     requires WorldDecorator;
     requires jdk.unsupported;
     requires CityGml;
+    requires GroundColor;
     requires org.apache.logging.log4j.core;
 
     exports org.patonki.downloader;

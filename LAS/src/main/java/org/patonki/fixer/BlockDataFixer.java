@@ -310,13 +310,15 @@ public class BlockDataFixer {
 
     private void addIfValid(int x, int y, int z, Queue<ClassifiedCoordinate> q) {
         if (!blocks.inRange(x,y,z)) return;
+
         Block block = blocks.get(x, y, z);
-        if (block != null && block.classification() == Classification.WATER) return;
-        if (block != null) q.add(new ClassifiedCoordinate(x, y, z, block.classification()));
-        else q.add(new ClassifiedCoordinate(x, y, z, null));
+        //only replace air and plants
+        if (block != null && !block.classification().isPlant()) return;
+
+        q.add(new ClassifiedCoordinate(x,y,z, block == null ? null : block.classification()));
     }
 
-    //the lidar laser is bad at detecting water so oceans may have holes in them
+    //the lidar laser is bad at detecting water so water may have holes in it
     //Flood fill algorithm: https://en.wikipedia.org/wiki/Flood_fill
     private void floodWater() {
         LOGGER.debug("Starting to fill water");
@@ -325,24 +327,33 @@ public class BlockDataFixer {
         Queue<ClassifiedCoordinate> q = new LinkedList<>();
         XYZBlock[][] ground = blocks.getGroundLayerIncomplete();
 
-        for (XYZBlock block : blocks) {
+        for (Iterator<XYZBlock> it = blocks.getIterator(false); it.hasNext(); ) {
+            XYZBlock block = it.next();
             if (block.block().classification() != Classification.WATER) continue;
             q.add(new ClassifiedCoordinate(block));
             while (!q.isEmpty()) {
                 ClassifiedCoordinate n = q.poll();
                 if (visited.contains(n)) continue;
                 visited.add(n);
-                if (n.classification != null && !n.classification.isPlant()) continue;
-                if (ground[n.x][n.y] != null) continue;
-                Block below = blocks.get(n.x, n.y, n.z - 1);
-                if (below != null && below.classification() == Classification.WATER) continue;
 
-                blocks.set(n.x, n.y, n.z, this.waterBlock);
-                if (n.z == 0) {
-                    blocks.set(n.x, n.y, 0, this.waterBlock);
-                } else {
-                    blocks.set(n.x, n.y, 0, this.seaBottomBlock);
+                boolean ignore = false;
+                for (int z = n.z-1; z >= 0; z--) {
+                    Block below = blocks.get(n.x, n.y, z);
+                    if (below != null && below.classification() == Classification.WATER) {
+                        ignore = true;
+                        break;
+                    }
                 }
+                if (ignore) continue;
+
+
+                var highestGroundPoint = ground[n.x][n.y];
+
+                if (highestGroundPoint != null && highestGroundPoint.block().classification() == Classification.GROUND && highestGroundPoint.z() > n.z)
+                    continue;
+
+                blocks.set(n.x, n.y, n.z, waterBlock);
+
                 amount++;
                 addIfValid(n.x - 1, n.y, n.z, q);
                 addIfValid(n.x + 1, n.y, n.z, q);

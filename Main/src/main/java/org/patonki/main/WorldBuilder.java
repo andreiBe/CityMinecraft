@@ -9,6 +9,7 @@ import org.patonki.converter.SchematicCreator;
 import org.patonki.data.BlockSerializer;
 import org.patonki.data.Classification;
 import org.patonki.decorator.WorldDecorator;
+import org.patonki.groundcolor.GroundColorEndpoint;
 import org.patonki.openstreetmap.OsmEndPoint;
 import org.patonki.las.LASEndPoint;
 import org.apache.logging.log4j.LogManager;
@@ -22,7 +23,10 @@ import java.util.concurrent.*;
 
 public class WorldBuilder {
     private final LASEndPoint LASEndPoint;
+    private final GroundColorEndpoint groundColorEndpoint;
     private final ExecutionStep[] skippedSteps;
+
+    private final ExecutionStep[] cachedSteps;
     private final OsmEndPoint osmEndPoint;
 
     private final CityGmlEndpoint cityGmlEndpoint;
@@ -36,11 +40,14 @@ public class WorldBuilder {
     private final ExecutionStep startStep;
     private final ExecutionStep endStep;
 
+
     private WorldBuilder(Settings settings, MinecraftWorldWriter worldWriter,
-                         String cacheFolderPath, String landUsePath,
+                         String cacheFolderPath, String aerialImagePath, String landUsePath,
                          String roadsPath, String waterwaysPath, String cityGmlDownloadFolder, String texturesPath,
-                         ExecutionStep startStep, ExecutionStep endStep, ExecutionStep[] skippedSteps, boolean multiThreaded) {
+                         ExecutionStep startStep, ExecutionStep endStep, ExecutionStep[] skippedSteps,  ExecutionStep[] cachedSteps, boolean multiThreaded) {
         this.LASEndPoint = new LASEndPoint(settings.getLasSettings());
+        this.groundColorEndpoint = new GroundColorEndpoint(settings.getGroundColorSettings(), texturesPath, aerialImagePath);
+        this.cachedSteps = cachedSteps;
         this.skippedSteps = skippedSteps;
         this.osmEndPoint = new OsmEndPoint(settings.getOsmSettings(), landUsePath, roadsPath, waterwaysPath);
         this.cityGmlEndpoint = new CityGmlEndpoint(cityGmlDownloadFolder, texturesPath,
@@ -84,11 +91,13 @@ public class WorldBuilder {
             ExecutionStep startStep,
             ExecutionStep endStep,
             ExecutionStep[] skippedSteps,
+            ExecutionStep[] cachedSteps,
             String lazFile,
             String cacheFolderPath,
             String schematicsFolder,
             String templateMinecraftWorldPath,
             String cityGmlDownloadPath,
+            String aerialImagePath,
             String landUsePath,
             String roadsPath,
             String waterwaysPath,
@@ -103,8 +112,8 @@ public class WorldBuilder {
             writer.copyTemplateWorld(templateMinecraftWorldPath);
         }
 
-        WorldBuilder builder = new WorldBuilder(settings, writer, cacheFolderPath,landUsePath,
-                roadsPath, waterwaysPath, cityGmlDownloadPath,texturePackPath, startStep, endStep,skippedSteps, true);
+        WorldBuilder builder = new WorldBuilder(settings, writer, cacheFolderPath,aerialImagePath, landUsePath,
+                roadsPath, waterwaysPath, cityGmlDownloadPath,texturePackPath, startStep, endStep,skippedSteps, cachedSteps, true);
 
         builder.run(lazFile, schematicsFolder);
 
@@ -119,8 +128,10 @@ public class WorldBuilder {
             ExecutionStep startStep,
             ExecutionStep endStep,
             ExecutionStep[] skippedSteps,
+            ExecutionStep[] cachedSteps,
             String lazFileFolder,
             String cacheFolderPath,
+            String aerialImagePath,
             String landUsePath,
             String roadsPath,
             String waterwaysPath,
@@ -135,7 +146,16 @@ public class WorldBuilder {
         if (files == null) {
             throw new IOException("Can't open las file folder!");
         }
-        ExecutorService executor = Executors.newFixedThreadPool(3);
+        int threadCount = settings.getThreadCount();
+        if (threadCount < 0) {
+            LOGGER.warn("Negative thread count: " + threadCount + " changing to 1");
+            threadCount = 1;
+        }
+        if (threadCount > 10) {
+            LOGGER.warn("More than ten threads: " + threadCount +" changing to 10" );
+            threadCount = 10;
+        }
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         ArrayList<Future<?>> futures = new ArrayList<>();
         MinecraftWorldWriter writer = null;
         if (endStep.number > ExecutionStep.SCHEMATIC.number) {
@@ -148,9 +168,9 @@ public class WorldBuilder {
             String lazFile = file.getAbsolutePath();
             Future<?> future = executor.submit((Callable<Void>) () -> {
                 WorldBuilder builder = new WorldBuilder(
-                        settings, finalWriter, cacheFolderPath,
+                        settings, finalWriter, cacheFolderPath,aerialImagePath,
                         landUsePath,roadsPath,waterwaysPath,
-                        cityGmlDownloadPath,texturePackPath, startStep, endStep, skippedSteps, false);
+                        cityGmlDownloadPath,texturePackPath, startStep, endStep, skippedSteps,cachedSteps, false);
                 builder.run(lazFile, schematicsFolder);
                 return null;
             });
@@ -158,7 +178,7 @@ public class WorldBuilder {
         }
         executor.shutdown();
         try {
-            int hours = 10;
+            int hours = 30;
             boolean success = executor.awaitTermination(hours, TimeUnit.HOURS);
             if (!success) {
                 LOGGER.error("TIMEOUT! The program did not finish in " + hours + " hours");
@@ -188,19 +208,20 @@ public class WorldBuilder {
     }
     private void run(String lazFile,
                      String schematicsFolder) throws Exception {
-        Executor executor = new Executor(lazFile, this.startStep, this.endStep, this.skippedSteps, this.cacheFolderPath, this.serializer);
+        Executor executor = new Executor(lazFile, this.startStep, this.endStep, this.skippedSteps, this.cacheFolderPath, this.serializer, this.cachedSteps);
 
         LOGGER.info("World builder starting...");
-        executor.execStart(() -> LASEndPoint.convertLazDataToBlocks(lazFile), ExecutionStep.READ_LAS);
-        LOGGER.info("Las points have been calculated!");
-        executor.exec(LASEndPoint::fixProblemsWithLASData, ExecutionStep.FIX_LAS);
-        LOGGER.info("Problems with the LAS data have been fixed!");
+        executor.exec(() -> LASEndPoint.convertLazDataToBlocks(lazFile), ExecutionStep.READ_LAS);
+
+        executor.exec(LASEndPoint::fixProblemsWithLASData, ExecutionStep.FIX_LAS );
+
+        executor.exec(groundColorEndpoint::colorGround, ExecutionStep.AERIAL_IMAGES);
+
         executor.exec(osmEndPoint::addOsmFeatures, ExecutionStep.OSM);
-        LOGGER.info("Osm features have been added!");
+
         executor.exec(cityGmlEndpoint::applyBuildings, ExecutionStep.GML);
-        LOGGER.info("CityGml buildings have been added");
+
         executor.exec(decorator::decorate, ExecutionStep.DECORATE);
-        LOGGER.info("Additional decorations have been added!");
 
         executor.exec((blocks) -> {
             File schematicsFolderFile = new File(schematicsFolder);
@@ -209,13 +230,12 @@ public class WorldBuilder {
             Blocks.BlockData data = blocks.getBlockData();
             schematicCreator.writeSchematic(getSchematicFileName(blocks, schematicsFolder),
                     data.blockIds(), data.blockData(), data.width(), data.length(), data.height());
+
         }, ExecutionStep.SCHEMATIC);
-        LOGGER.info("Schematic has been written!");
 
         executor.exec(blocks -> {
             worldWriter.writeSchematicToWorld(getSchematicFileName(blocks, schematicsFolder));
         }, ExecutionStep.MINECRAFT_WORLD);
-        LOGGER.info("Schematic has been written to the minecraft world!");
 
         LOGGER.info("World builder exiting...");
     }
