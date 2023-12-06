@@ -1,8 +1,12 @@
-package org.patonki.color;
+package org.patonki.color.colorBlockConverters;
 
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.patonki.color.Color;
+import org.patonki.color.ColorAverage;
+import org.patonki.color.ColorToBlockConverterOptions;
+import org.patonki.color.IColorToBlockConverter;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 

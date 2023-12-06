@@ -3,8 +3,7 @@ package org.patonki.citygml;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.patonki.color.BlackAndWhiteBlocks;
-import org.patonki.color.ColorToMinecraftBlock;
+import org.patonki.color.ColorBlockConverterFactory;
 import org.patonki.citygml.citygml.BlockLocations;
 import org.patonki.citygml.citygml.GmlOptions;
 import org.patonki.citygml.features.Building;
@@ -24,8 +23,8 @@ public class GmlFeaturesInArea {
         BuildingToCubes converter = new BuildingToCubes();
 
         IColorToBlockConverter colorConverter = switch (options.texturingType()) {
-            case USE_MINECRAFT_TEXTURES -> new ColorToMinecraftBlock(Classification.BUILDING, texturesPath, options.bannedBlocks(), options.colorConvert());
-            case USE_GRAY_SCALE -> new BlackAndWhiteBlocks(texturesPath, options.blackAndWhiteColorOptions());
+            case USE_MINECRAFT_TEXTURES -> ColorBlockConverterFactory.getColorBlockConverter(Classification.BUILDING, texturesPath, options.bannedBlocks(), options.colorConvert());
+            case USE_GRAY_SCALE -> ColorBlockConverterFactory.getGrayScaleConverter(Classification.BUILDING, texturesPath, options.bannedBlocks(), options.blackAndWhiteColorOptions());
         };
 
         boolean oneColor = switch (options.coloringType()) {

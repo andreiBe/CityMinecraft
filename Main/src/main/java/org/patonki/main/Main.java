@@ -135,38 +135,6 @@ public class Main {
         }
         return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld, lasFiles);
     }
-    private static void runTest(String[] args) throws IOException {
-        LOGGER.debug("Running test");
-        if (args.length == 0) {
-            System.out.println("Please provide the path to the configuration json file");
-            return;
-        }
-        String options = args[0];
-        setLogLevel(Level.DEBUG);
-
-        Settings settings = JsonSerializer.deserializeFromFile(options, Settings.class);
-
-        String lazFile = args[0];
-
-        args = Arrays.copyOfRange(args, 1, args.length);
-        CommandLineArgs commandLineArgs = readCommandLineArguments(args);
-        try {
-            WorldBuilder.runSingle(settings,
-                    commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped, commandLineArgs.cached,
-                    lazFile,
-                    CACHE_FILE_LOCATION,
-                    MINECRAFT_SCHEMATIC_OUTPUT_PATH,
-                    TEMPLATE_MINECRAFT_WORLD,
-                    GML_DOWNLOAD_FOLDER,
-                    AERIAL_FILE_DOWNLOAD_LOCATION,
-                    FILTERED_LAND_USE_LOCATION,
-                    FILTERED_ROADS_LOCATION,
-                    FILTERED_WATERWAYS_LOCATION, TEXTURE_PACK_FOLDER,
-                    RESULTING_MINECRAFT_WORLD_PATH, commandLineArgs.copyToMinecraft());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     private static void download(String[] args) throws IOException {
         LOGGER.debug("Downloading");
         if (args.length == 0) {
@@ -212,8 +180,7 @@ public class Main {
         String[] remainingArgs = Arrays.copyOfRange(args, 1,args.length);
         switch (command) {
             case "download" -> download(remainingArgs);
-            case "test" -> runTest(remainingArgs);
-            case "runAll" -> runAll(remainingArgs);
+            case "run" -> runAll(remainingArgs);
             case "createTemplates" -> createTemplates();
         }
     }

@@ -131,7 +131,7 @@ public class BlockDataFixer {
             //comparing the number of building blocks nearby with the number of blocks that
             //have the same classification as the block in question (plant or unknown)
 
-            int similarBlocksNearby = this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock,cf, 4);
+            int similarBlocksNearby = this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock,cf, 3);
             int buildingNeighbors = this.blocks.numberOfBlocksWithClassificationInRadius(XYZBlock, Classification.BUILDING, 2);
             if (similarBlocksNearby > buildingNeighbors) continue;
             if (buildingNeighbors >= 7) {

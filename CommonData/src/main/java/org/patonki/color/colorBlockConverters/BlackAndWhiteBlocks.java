@@ -1,5 +1,7 @@
-package org.patonki.color;
+package org.patonki.color.colorBlockConverters;
 
+import org.patonki.color.Color;
+import org.patonki.color.ColorToBlockConverterOptions;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 import org.patonki.util.Pair;
@@ -11,8 +13,8 @@ public class BlackAndWhiteBlocks extends ColorBlockConverter {
     private static final int MAX_COLOR = 10000;
     private final int[] colorsFastLookup = new int[MAX_COLOR];
 
-    public BlackAndWhiteBlocks(String texturePath, ColorToBlockConverterOptions options) throws IOException {
-        super(Classification.BUILDING, texturePath, options, new Block[0]);
+    public BlackAndWhiteBlocks(Classification classification, String texturePath, Block[] bannedBlocks, ColorToBlockConverterOptions options) throws IOException {
+        super(classification, texturePath, options, bannedBlocks);
         double[] distances = new double[colorsFastLookup.length];
         for (int i = 0; i < blockEntries.size(); i++) {
             var entry = blockEntries.get(i);

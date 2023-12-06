@@ -1,6 +1,9 @@
-package org.patonki.color;
+package org.patonki.color.colorBlockConverters;
 
 
+import org.patonki.color.Color;
+import org.patonki.color.ColorToBlockConverterOptions;
+import org.patonki.color.colorBlockConverters.ColorBlockConverter;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 import org.patonki.util.Pair;
@@ -8,7 +11,7 @@ import org.patonki.util.Pair;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ColorToMinecraftBlock extends ColorBlockConverter{
+public class ColorToMinecraftBlock extends ColorBlockConverter {
     private static final int MAX_COLOR = 255;
     private static final int STEP = MAX_COLOR;
 

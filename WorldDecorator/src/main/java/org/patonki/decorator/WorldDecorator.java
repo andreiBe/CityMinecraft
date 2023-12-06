@@ -214,7 +214,6 @@ public class WorldDecorator {
 
         LOGGER.debug("Tree points: " + treePoints.size());
         HashSet<Integer> added = new HashSet<>();
-        int lol = 0;
         for (int i = treePoints.size()-1; i >= 0; i--) {
             TreePoint p = treePoints.get(i);
 
@@ -223,7 +222,7 @@ public class WorldDecorator {
             if (p.partOfTree || p.z - groundHeight < minZ) {
                 continue;
             }
-            if (treeCenters.stream().anyMatch(tree -> tree.contains(p))) {
+            if (visited[p.x][p.y] != 0) {
                 continue;
             }
 
@@ -250,7 +249,6 @@ public class WorldDecorator {
             minDistance++;
             int mDistance = (int) Math.round(minDistance);
 
-            int randomData = new Random().nextInt(15);
             ArrayList<TreePoint> valid = new ArrayList<>();
             for (int x = centerOfTree.x - mDistance; x <= centerOfTree.x + mDistance; x++) {
                 for (int y = centerOfTree.y - mDistance; y <= centerOfTree.y + mDistance; y++) {

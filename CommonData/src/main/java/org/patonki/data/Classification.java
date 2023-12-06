@@ -31,6 +31,7 @@ public enum Classification {
         return map.get(classification);
     }
 
+
     public boolean isPlant() {
         return this == LOW_VEGETATION || this == MEDIUM_VEGETATION || this == HIGH_VEGETATION;
     }

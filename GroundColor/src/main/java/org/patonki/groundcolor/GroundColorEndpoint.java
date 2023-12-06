@@ -25,24 +25,17 @@ public class GroundColorEndpoint {
         this.texturePath = texturePath;
         this.aerialImageDownloadPath = aerialImageDownloadPath;
     }
-    private class GroundColorConverter extends ColorToMinecraftBlock {
-        public GroundColorConverter(String texturePath, Block[] banned, ColorToBlockConverterOptions options) throws IOException {
-            super(Classification.GROUND, texturePath, banned, options);
-        }
-
-        @Override
-        public Block convert(Color color) {
-            //this is literally just magic. It just works (sometimes)
-            int rgSum = color.r() + color.g();
-            if (rgSum < 150) {
-                if (color.b() > 70) { //built
-                    return settings.builtBlock();
-                } else { //vegetation
-                    return settings.vegetationBlock();
-                }
+    private Block getBlock(IColorToBlockConverter colorToBlockConverter, Color color) {
+        //this is literally just magic. It just works (sometimes)
+        int rgSum = color.r() + color.g();
+        if (rgSum < 150) {
+            if (color.b() > 70) { //built
+                return settings.builtBlock();
+            } else { //vegetation
+                return settings.vegetationBlock();
             }
-            return super.convert(color);
         }
+        return colorToBlockConverter.convert(color);
     }
     public void colorGround(Blocks blocks) throws IOException {
         LOGGER.info("Starting to differentiate between vegetation and built environments");
@@ -52,7 +45,7 @@ public class GroundColorEndpoint {
         LOGGER.info("Using aerial image from path " + imagePath);
 
         int[][] colors = ImageUtil.convertImageTo2DArray(imagePath);
-        var colorConverter = new GroundColorConverter(this.texturePath, new Block[0], settings.colorConvert());
+        var colorConverter = ColorBlockConverterFactory.getColorBlockConverter(Classification.GROUND, this.texturePath, new Block[0], settings.colorConvert());
 
 
         GroundLayer ground = blocks.getGroundLayer();
@@ -60,7 +53,7 @@ public class GroundColorEndpoint {
             for (int y = 0; y < ground.getLength(); y++) {
                 int c = colors[colors.length - 1 - y][x];
                 Color color = Color.fromInt(c);
-                Block block = colorConverter.convert(color);
+                Block block = getBlock(colorConverter, color);
                 for (int z = ground.getHeightAt(x,y); z >= 0; z--) {
                     if (blocks.hasClassification(x,y,z, Classification.GROUND)) {
                         blocks.set(x,y,z, block);

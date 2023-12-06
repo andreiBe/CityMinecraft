@@ -13,6 +13,7 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.patonki.util.ArrayMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +31,7 @@ public abstract class FeatureReader<T, TYPE, INFO> {
     }
     protected final InfoSupplier<TYPE, INFO> supplier;
 
+    private static final ArrayMap<String, ArrayList<Object>> cachedReads = new ArrayMap<>();
     protected record Feature(Coordinate[] coordinates,
                              SimpleFeature feature,
                              Geometry geometry) {
@@ -46,10 +48,14 @@ public abstract class FeatureReader<T, TYPE, INFO> {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     public ArrayList<T> read(String path) throws FactoryException, IOException, TransformException {
+        if (cachedReads.containsKey(path)) {
+            LOGGER.debug("The features are cached from path " + path);
+            return (ArrayList<T>) cachedReads.get(path);
+        }
         LOGGER.debug("Starting to read features from " + path);
         File file = new File(path);
-        file.setReadOnly();
 
         FileDataStore dataStore = new ShapefileDataStore(file.toURI().toURL());
 
@@ -73,6 +79,8 @@ public abstract class FeatureReader<T, TYPE, INFO> {
             dataStore.dispose();
         }
         LOGGER.debug("Found " + items.size() +" features");
+
+        cachedReads.put(path, (ArrayList<Object>) items);
         return items;
     }
 }

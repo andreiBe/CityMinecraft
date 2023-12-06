@@ -87,42 +87,6 @@ public class WorldBuilder {
         }
         return new MinCoordinates(minX, minY);
     }
-    public static void runSingle(
-            Settings settings,
-            ExecutionStep startStep,
-            ExecutionStep endStep,
-            ExecutionStep[] skippedSteps,
-            ExecutionStep[] cachedSteps,
-            String lazFile,
-            String cacheFolderPath,
-            String schematicsFolder,
-            String templateMinecraftWorldPath,
-            String cityGmlDownloadPath,
-            String aerialImagePath,
-            String landUsePath,
-            String roadsPath,
-            String waterwaysPath,
-            String texturePackPath,
-            String absolutePathToResultingMinecraftWorld, boolean copyToMinecraftFolder) throws Exception {
-
-        MinecraftWorldWriter writer = null;
-
-        if (endStep.number > ExecutionStep.SCHEMATIC.number) {
-            MinCoordinates minCoordinates = findMinimumCoordinates(new File(lazFile));
-            writer = new MinecraftWorldWriter(absolutePathToResultingMinecraftWorld, minCoordinates.x(), minCoordinates.y());
-            writer.copyTemplateWorld(templateMinecraftWorldPath);
-        }
-
-        WorldBuilder builder = new WorldBuilder(settings, writer, cacheFolderPath,aerialImagePath, landUsePath,
-                roadsPath, waterwaysPath, cityGmlDownloadPath,texturePackPath, startStep, endStep,skippedSteps, cachedSteps, true);
-
-        builder.run(lazFile, schematicsFolder);
-
-        if (copyToMinecraftFolder && writer != null) {
-            writer.copyWorldToMinecraftWorldsFolder();
-        }
-    }
-
 
     public static void runAll(
             Settings settings,
@@ -145,6 +109,7 @@ public class WorldBuilder {
             boolean copyToMinecraft) throws IOException, LasFileFormatException {
         File lasFolder = new File(lazFileFolder);
         File[] files;
+
         if (lasFiles == null) {
             files = lasFolder.listFiles();
             if (files == null) {
@@ -165,6 +130,7 @@ public class WorldBuilder {
             threadCount = 10;
         }
         LOGGER.debug("Running " + threadCount + " threads");
+
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         ArrayList<Future<?>> futures = new ArrayList<>();
         MinecraftWorldWriter writer = null;
@@ -173,6 +139,7 @@ public class WorldBuilder {
             writer = new MinecraftWorldWriter(absolutePathToResultingMinecraftWorld, minCoordinates.x(), minCoordinates.y());
             writer.copyTemplateWorld(templateMinecraftWorldPath);
         }
+        boolean multiThreadBuildings = files.length == 1;
         final var finalWriter = writer;
         for (File file : files) {
             String lazFile = file.getAbsolutePath();
@@ -180,7 +147,7 @@ public class WorldBuilder {
                 WorldBuilder builder = new WorldBuilder(
                         settings, finalWriter, cacheFolderPath,aerialImagePath,
                         landUsePath,roadsPath,waterwaysPath,
-                        cityGmlDownloadPath,texturePackPath, startStep, endStep, skippedSteps,cachedSteps, false);
+                        cityGmlDownloadPath,texturePackPath, startStep, endStep, skippedSteps,cachedSteps, multiThreadBuildings);
                 builder.run(lazFile, schematicsFolder);
                 return null;
             });

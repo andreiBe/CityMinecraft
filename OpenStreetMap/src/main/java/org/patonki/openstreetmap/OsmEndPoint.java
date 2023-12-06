@@ -2,14 +2,18 @@ package org.patonki.openstreetmap;
 
 import org.patonki.OsmFeaturesToMinecraft;
 import org.patonki.blocks.Blocks;
+import org.patonki.landUse.LandUse;
 import org.patonki.openstreetmap.settings.OpenStreetMapSettings;
 import org.patonki.landUse.LandUseReader;
 import org.geotools.api.referencing.FactoryException;
 import org.geotools.api.referencing.operation.TransformException;
+import org.patonki.roads.Road;
 import org.patonki.roads.RoadReader;
+import org.patonki.waterways.Waterway;
 import org.patonki.waterways.WaterwayReader;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Class for adding land use, road and waterway information to the block model.
@@ -23,7 +27,6 @@ public class OsmEndPoint {
     private final String landUsePath;
     private final String roadsPath;
     private final String waterwaysPath;
-
     /**
      * @param settings settings
      * @param landUsePath Path to the filtered land use shapefile

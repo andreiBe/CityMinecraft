@@ -6,6 +6,7 @@ import org.patonki.blocks.Blocks;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +32,11 @@ public class LasDataToBlocks {
         //A single block can contain multiple points with different classifications, so we need to choose one of them.
         //The classification of blocks is selected based on this map.
         //The more points of a specific classification, the likelier it is that the classification is chosen
-        HashMap<Classification, Integer> clAmount = new HashMap<>();
+
+        //using an array instead on a hashMap for performance reasons
+        //the classification will function as the index
+        int[] clAmount = new int[Classification.values().length];
+
         int numberOfBlocks = 0;
         int lastX=0; int lastY=0; int lastZ=0;
         //the points are sorted so points inside one block will be after one another
@@ -45,11 +50,12 @@ public class LasDataToBlocks {
                     blocks.set(lastX, lastY, lastZ, block);
                     numberOfBlocks++;
                 }
-                clAmount.clear();
+                Arrays.fill(clAmount, 0);
             }
             //increasing the count of a classification by one
-            clAmount.putIfAbsent(point.classification, 0);
-            clAmount.put(point.classification, clAmount.get(point.classification) + 1);
+            clAmount[point.classification.ordinal()] += 1;
+
+
             lastX = point.x;
             lastY = point.y;
             lastZ = point.z;
@@ -60,18 +66,21 @@ public class LasDataToBlocks {
         return blocks;
     }
 
-    private Block getBlockBasedOnClassifiedPoints(Map<Classification, Integer> clAmount) {
+    private Block getBlockBasedOnClassifiedPoints(int[] clAmount) {
         Classification mostMatches = null; //the classification of the final block
+        int bestScore = 0;
         int sum = 0; //number of points inside the block
-        for (Classification cl : clAmount.keySet()) {
-            if (mostMatches == null) mostMatches = cl;
-            int bestScore = clAmount.get(mostMatches) * Classification.importance(mostMatches);
-            int score = clAmount.get(cl) * Classification.importance(cl);
-            if (score >= bestScore) {
-                mostMatches = cl;
+        for (int i = 0; i < clAmount.length; i++) {
+            Classification cf = Classification.values()[i];
+            int score = clAmount[i] * Classification.importance(cf);
+
+            if (mostMatches == null || score >= bestScore) {
+                mostMatches = cf;
+                bestScore = score;
             }
-            sum += clAmount.get(cl);
+            sum += clAmount[i];
         }
+
         //points like these are most likely mistakes in the data
         if (sum <= 5 && mostMatches == Classification.UNKNOWN) return null;
 
