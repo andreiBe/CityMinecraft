@@ -172,7 +172,7 @@ public class BlockDataFixer {
                 if (!neighbor.block().classification().isPlant()) continue;
 
                 int iterationNum = alreadyChanged.getOrDefault(new Coordinate(neighbor.x(), neighbor.y(), neighbor.z()), 0);
-                if (iterationNum > 3) continue;
+                if (iterationNum > 5) continue;
                 this.blocks.set(coordinate.x, coordinate.y, coordinate.z, neighbor.block());
                 alreadyChanged.put(coordinate, iterationNum+1);
                 for (XYZBlock b : neighbors) {
@@ -182,7 +182,6 @@ public class BlockDataFixer {
                 }
 
                 amount++;
-                break;
             }
         }
         LOGGER.debug("Changed " + amount + " blocks");

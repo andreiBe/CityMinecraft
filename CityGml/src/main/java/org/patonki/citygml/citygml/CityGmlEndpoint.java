@@ -17,7 +17,8 @@ public class CityGmlEndpoint {
     private final Block roofBlock;
     private final String downloadFolder;
 
-    public CityGmlEndpoint(String downloadFolder, String texturesFolder, GmlOptions options, boolean multiThread, Block buildingBlock, Block roofBlock) {
+    public CityGmlEndpoint(String downloadFolder, String texturesFolder, GmlOptions options, boolean multiThread,
+                           Block buildingBlock, Block roofBlock) {
         this.downloadFolder = downloadFolder;
         this.options = options;
         this.texturesFolder = texturesFolder;
@@ -29,7 +30,7 @@ public class CityGmlEndpoint {
     public void applyBuildings(Blocks blocks) throws Exception {
         CityGmlDownloader downloader = new CityGmlDownloader(this.downloadFolder);
         BuildingCollection buildings = downloader.deserialize(blocks.getMinX(), blocks.getMinY(),
-                blocks.getMinX() + blocks.getWidth(), blocks.getMinY() + blocks.getLength());
+                blocks.getMinX() + blocks.getWidth(), blocks.getMinY() + blocks.getLength(), blocks.getSideLength());
 
         GmlFeaturesInArea processor = new GmlFeaturesInArea();
 

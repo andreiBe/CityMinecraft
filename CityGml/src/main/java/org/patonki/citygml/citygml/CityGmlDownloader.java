@@ -115,7 +115,16 @@ public class CityGmlDownloader {
 
     }
 
-    public BuildingCollection deserialize(int minX, int minY, int maxX, int maxY) throws FileNotFoundException {
+    public BuildingCollection deserialize(int minX, int minY, int maxX, int maxY, int sideLength) throws FileNotFoundException {
+        LOGGER.debug("The coordinates before fix: " + minX + " " + minY + " " + maxX + " " + maxY);
+        minX -= minX % sideLength;
+        minY -= minY % sideLength;
+        if (maxX % sideLength > 5) maxX = maxX - maxX % sideLength + sideLength;
+        else maxX -= maxX % sideLength;
+        if (maxY % sideLength > 5) maxY = maxY - maxY % sideLength + sideLength;
+        else maxY -= maxY % sideLength;
+
+
         String filtered = getPathToFilteredBuildingCollection(minX, minY, maxX, maxY);
         LOGGER.info("Reading gml from " + filtered);
         JsonReader jsonReader = new JsonReader(new FileReader(filtered));

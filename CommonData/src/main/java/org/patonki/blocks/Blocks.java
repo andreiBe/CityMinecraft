@@ -25,6 +25,7 @@ import java.util.List;
 @SuppressWarnings({"unused", "UnusedReturnValue", "BooleanMethodIsAlwaysInverted"})
 public abstract class Blocks implements Iterable<XYZBlock>{
     protected final int width, length, height, minX, minY, minZ;
+    private final int sideLength;
 
     /**
      * @param width Width of the area
@@ -34,13 +35,14 @@ public abstract class Blocks implements Iterable<XYZBlock>{
      * @param minY The smallest y-coordinate in the area.
      * @param minZ The smallest z-coordinate in the area.
      */
-    public Blocks(int width, int length, int height, int minX, int minY, int minZ) {
+    public Blocks(int width, int length, int height, int minX, int minY, int minZ, int sideLength) {
         this.width = width;
         this.length = length;
         this.height = height;
         this.minX = minX;
         this.minY = minY;
         this.minZ = minZ;
+        this.sideLength = sideLength;
     }
 
     /**
@@ -372,6 +374,10 @@ public abstract class Blocks implements Iterable<XYZBlock>{
 
     public int getMinZ() {
         return minZ;
+    }
+
+    public int getSideLength() {
+        return sideLength;
     }
 
     /**

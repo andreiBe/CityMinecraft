@@ -23,7 +23,8 @@ selection_box = bounding_box.selection_boxes[0]
 # minecraft has a weird coordinate system where Y is the height instead of Z
 level.paste(schematic, dimension,
             bounding_box, level.dimensions[0],
-            (y, z + height // 2 + 1, x), include_blocks=True, include_entities=False
+            # the center of the structure (not the lower corner)
+            (y + length // 2, z + height // 2 + 1, x + width // 2), include_blocks=True, include_entities=False
             )
 level.save()
 level.close()

@@ -31,10 +31,10 @@ public class ArrayBlocks extends Blocks {
     }
 
     /**
-     * @see Blocks#Blocks(int, int, int, int, int, int)
+     * @see Blocks#Blocks(int, int, int, int, int, int, int)
      */
-    public ArrayBlocks(int width, int length, int height, int minX, int minY, int minZ) {
-        super(width, length, height, minX, minY, minZ);
+    public ArrayBlocks(int width, int length, int height, int minX, int minY, int minZ, int sideLength) {
+        super(width, length, height, minX, minY, minZ, sideLength);
         this.blocks = new byte[width*length*height];
     }
     private int pos(int x, int y, int z) {
@@ -144,21 +144,22 @@ public class ArrayBlocks extends Blocks {
     public static class ArrayBlockSerializer extends BlockSerializer {
         @Override
         public ArrayBlocks deserialize(byte[] ar) {
-            // 6 * 4 = width, length, height, minX, minY, minZ as bytes
+            // 7 * 4 = width, length, height, minX, minY, minZ,sideLength as bytes
             //the palette takes 256*3 bytes
             //it takes 1 byte to represent a block
 
             //the metadata
-            int[] ints = readInts(ar, 0, 6);
-            int width, length, height, minX, minY, minZ;
+            int[] ints = readInts(ar, 0, 7);
+            int width, length, height, minX, minY, minZ, sideLength;
             width = ints[0];
             length = ints[1];
             height = ints[2];
             minX = ints[3];
             minY = ints[4];
             minZ = ints[5];
-            ArrayBlocks blocks = new ArrayBlocks(width, length, height, minX, minY, minZ);
-            int i = 6 * 4;
+            sideLength = ints[6];
+            ArrayBlocks blocks = new ArrayBlocks(width, length, height, minX, minY, minZ, sideLength);
+            int i = 7 * 4;
             //the block pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 byte id = ar[i];
@@ -191,14 +192,14 @@ public class ArrayBlocks extends Blocks {
         @Override
         public byte[] serialize(Blocks blocksUnknown) {
             ArrayBlocks blocks = (ArrayBlocks) blocksUnknown;
-            // 6 * 4 = width, length, height, minX, minY, minZ as bytes
+            // 7 * 4 = width, length, height, minX, minY, minZ,sideLength as bytes
             //the palette takes 256*3 bytes
             //it takes 1 byte to represent a block
 
             //storing the metadata
-            byte[] serialized = new byte[6*4 + blocks.pallet.length * 3 + blocks.width * blocks.length * blocks.height];
-            writeInts(serialized, 0, blocks.width, blocks.length, blocks.height, blocks.minX, blocks.minY, blocks.minZ);
-            int i = 6*4;
+            byte[] serialized = new byte[7*4 + blocks.pallet.length * 3 + blocks.width * blocks.length * blocks.height];
+            writeInts(serialized, 0, blocks.width, blocks.length, blocks.height, blocks.minX, blocks.minY, blocks.minZ, blocks.getSideLength());
+            int i = 7*4;
             //storing the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 Block block = blocks.pallet[palletIndex];

@@ -23,6 +23,8 @@ public class LasReaderSettings {
 
     private final boolean useOctTree;
 
+    private final int sideLength;
+
     private<K,V> HashMap<K,V> checkNotNull(HashMap<K,V> map, String name) {
         if (map == null) throw new NullPointerException(name + " cannot be null!");
         for (K key : map.keySet()) {
@@ -49,8 +51,9 @@ public class LasReaderSettings {
      * @param roofBlock              The block that the building roofs will have
      * @param ignoredClassifications Lidar points with these classifications will be ignored
      * @param useOctTree             Whether to use the more memory efficient but slower algorithm
+     * @param sideLength The length of the area in meters, for example 500m
      */
-    public LasReaderSettings(HashMap<Integer, Classification> classificationMapping, HashMap<Classification, Block> blockMapping, Block roofBlock, Classification[] ignoredClassifications, boolean useOctTree) {
+    public LasReaderSettings(HashMap<Integer, Classification> classificationMapping, HashMap<Classification, Block> blockMapping, Block roofBlock, Classification[] ignoredClassifications, boolean useOctTree, int sideLength) {
         if (ignoredClassifications == null) ignoredClassifications = new Classification[0];
         if (roofBlock == null) throw new NullPointerException("Roof block cannot be null!");
         if (roofBlock.classification() != Classification.BUILDING) throw new NullPointerException("Roof block should be classified as building!");
@@ -59,6 +62,7 @@ public class LasReaderSettings {
         this.ignoredClassifications = Arrays.copyOf(ignoredClassifications,ignoredClassifications.length);
         this.classificationMapping = checkNotNull(classificationMapping, "Classification map");
         this.blockMapping = checkContainsAllEntries(blockMapping, classificationMapping.values().toArray(Classification[]::new), "Block map");
+        this.sideLength = sideLength;
     }
 
     /**
@@ -92,5 +96,9 @@ public class LasReaderSettings {
 
     public Block getRoofBlock() {
         return roofBlock;
+    }
+
+    public int getSideLength() {
+        return sideLength;
     }
 }

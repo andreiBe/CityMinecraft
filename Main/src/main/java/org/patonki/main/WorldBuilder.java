@@ -19,6 +19,7 @@ import org.patonki.settings.Settings;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.*;
 
 public class WorldBuilder {
@@ -129,6 +130,7 @@ public class WorldBuilder {
             ExecutionStep endStep,
             ExecutionStep[] skippedSteps,
             ExecutionStep[] cachedSteps,
+            String[] lasFiles,
             String lazFileFolder,
             String cacheFolderPath,
             String aerialImagePath,
@@ -142,12 +144,19 @@ public class WorldBuilder {
             String absolutePathToResultingMinecraftWorld,
             boolean copyToMinecraft) throws IOException, LasFileFormatException {
         File lasFolder = new File(lazFileFolder);
-        File[] files = lasFolder.listFiles();
-        if (files == null) {
-            throw new IOException("Can't open las file folder!");
+        File[] files;
+        if (lasFiles == null) {
+            files = lasFolder.listFiles();
+            if (files == null) {
+                throw new IOException("Can't open las file folder!");
+            }
+        } else {
+            LOGGER.debug("Running " + lasFiles.length + " las files");
+            files = Arrays.stream(lasFiles).map((l) -> new File(lazFileFolder+"/"+ l)).toArray(File[]::new);
         }
+
         int threadCount = settings.getThreadCount();
-        if (threadCount < 0) {
+        if (threadCount <= 0) {
             LOGGER.warn("Negative thread count: " + threadCount + " changing to 1");
             threadCount = 1;
         }
@@ -155,6 +164,7 @@ public class WorldBuilder {
             LOGGER.warn("More than ten threads: " + threadCount +" changing to 10" );
             threadCount = 10;
         }
+        LOGGER.debug("Running " + threadCount + " threads");
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         ArrayList<Future<?>> futures = new ArrayList<>();
         MinecraftWorldWriter writer = null;
@@ -188,6 +198,7 @@ public class WorldBuilder {
                     try {
                         future.get();
                     } catch (ExecutionException e) {
+                        e.printStackTrace();
                         LOGGER.error(e);
                     }
                 }

@@ -235,6 +235,8 @@ public class Downloader {
         boolean allFilesExist = true;
         for (String unfilteredShapeFileLocation : unfilteredShapeFileLocations) {
             File file = new File(unfilteredShapeFileLocation);
+
+            file = new File(filteredInputFolder+"/" + file.getName());
             if (!file.exists()) {
                 allFilesExist = false;
                 break;

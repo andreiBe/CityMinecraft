@@ -16,7 +16,7 @@ public class ArrayBlockTest {
     void serializationHardcore() throws IOException, NoSuchFieldException, IllegalAccessException {
         File serializedFile = new File("lol.dat");
         try {
-            ArrayBlocks blocks = new ArrayBlocks(500, 500, 200, 1853536, 534534, 160);
+            ArrayBlocks blocks = new ArrayBlocks(500, 500, 200, 1853536, 534534, 160, 500);
             Block[][][] correct = new Block[500][500][200];
 
             Random rng = new Random();
@@ -67,7 +67,7 @@ public class ArrayBlockTest {
     }
     @Test
     void serialization() {
-        ArrayBlocks blocks = new ArrayBlocks(500, 200, 50, 1853536, 534534, 160);
+        ArrayBlocks blocks = new ArrayBlocks(500, 200, 50, 1853536, 534534, 160, 500);
         blocks.set(7,6,5, new Block((byte) 7, (byte) 3, Classification.GROUND));
         byte[] serialized = new ArrayBlocks.ArrayBlockSerializer().serialize(blocks);
 

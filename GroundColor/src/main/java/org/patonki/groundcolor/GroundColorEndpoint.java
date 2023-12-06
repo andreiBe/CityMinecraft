@@ -46,7 +46,9 @@ public class GroundColorEndpoint {
     }
     public void colorGround(Blocks blocks) throws IOException {
         LOGGER.info("Starting to differentiate between vegetation and built environments");
-        String imagePath = this.aerialImageDownloadPath + "/" + blocks.getMinX() + "_"+blocks.getMinY()+".png";
+        int minX = blocks.getMinX() - blocks.getMinX() % blocks.getSideLength();
+        int minY = blocks.getMinY() - blocks.getMinY() % blocks.getSideLength();
+        String imagePath = this.aerialImageDownloadPath + "/" + minX + "_"+minY+".png";
         LOGGER.info("Using aerial image from path " + imagePath);
 
         int[][] colors = ImageUtil.convertImageTo2DArray(imagePath);

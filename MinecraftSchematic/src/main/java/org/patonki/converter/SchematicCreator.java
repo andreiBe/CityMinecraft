@@ -3,11 +3,13 @@ package org.patonki.converter;
 import net.querz.nbt.io.NBTUtil;
 import net.querz.nbt.io.NamedTag;
 import net.querz.nbt.tag.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 
 public class SchematicCreator {
-
+    private static final Logger LOGGER = LogManager.getLogger(SchematicCreator.class);
     /**
      * Writes the minecraft blocks into a schematic. Google .schematic folder to understand how
      * the block id and data arrays work.
@@ -41,6 +43,8 @@ public class SchematicCreator {
         tag.put("'WEOffsetZ'", new IntTag(0));
         tag.put("Entities", new ListTag<>(IntTag.class));
         tag.put("TileEntities", new ListTag<>(IntTag.class));
+
+        LOGGER.info("Writing schematic file to " + filename);
         NBTUtil.write(namedTag, filename, false);
     }
 }

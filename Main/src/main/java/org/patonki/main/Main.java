@@ -1,14 +1,16 @@
 package org.patonki.main;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.spi.LoggerContext;
-import org.patonki.downloader.Downloader;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.patonki.downloader.Downloader;
 import org.patonki.serialize.JsonSerializer;
 import org.patonki.settings.Settings;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -56,7 +58,15 @@ public class Main {
     private static void setLogLevel(Level level) {
         Configurator.setAllLevels(LogManager.getRootLogger().getName(), level);
     }
-    private static void runAll(String options, String[] args) throws IOException{
+    private static void runAll(String[] args) throws IOException{
+
+        if (args.length == 0) {
+            System.out.println("Please provide the path to the configuration json file");
+            return;
+        }
+        String options = args[0];
+        args = Arrays.copyOfRange(args, 1,args.length);
+
         Settings settings = JsonSerializer.deserializeFromFile(options, Settings.class);
         setLogLevel(Level.DEBUG);
         String lazFileFolder = args[0];
@@ -66,6 +76,7 @@ public class Main {
         try {
             WorldBuilder.runAll(settings,
                     commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped,commandLineArgs.cached,
+                    commandLineArgs.lasFiles,
                     lazFileFolder,
                     CACHE_FILE_LOCATION,
                     AERIAL_FILE_DOWNLOAD_LOCATION,
@@ -80,12 +91,13 @@ public class Main {
             e.printStackTrace();
         }
     }
-    private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, ExecutionStep[] cached, boolean copyToMinecraft){}
+    private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, ExecutionStep[] cached, boolean copyToMinecraft, String[] lasFiles){}
     private static CommandLineArgs readCommandLineArguments(String[] args) {
         ExecutionStep start = ExecutionStep.BEGINNING;
         ExecutionStep end = ExecutionStep.END;
         ExecutionStep[] skipped = new ExecutionStep[0];
         ExecutionStep[] cached = new ExecutionStep[0];
+        String[] lasFiles = null;
         boolean copyToMinecraftWorld = false;
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -113,13 +125,23 @@ public class Main {
                     i++;
                 }
                 case "--copy" -> copyToMinecraftWorld = true;
+                case "--files" -> {
+                    String nextArg = args[i+1];
+                    lasFiles = nextArg.split(",");
+                    i++;
+                }
                 default -> LOGGER.warn("Unknown cmd argument: " + arg);
             }
         }
-        return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld);
+        return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld, lasFiles);
     }
-    private static void runTest(String options, String[] args) throws IOException {
+    private static void runTest(String[] args) throws IOException {
         LOGGER.debug("Running test");
+        if (args.length == 0) {
+            System.out.println("Please provide the path to the configuration json file");
+            return;
+        }
+        String options = args[0];
         setLogLevel(Level.DEBUG);
 
         Settings settings = JsonSerializer.deserializeFromFile(options, Settings.class);
@@ -145,8 +167,13 @@ public class Main {
             e.printStackTrace();
         }
     }
-    private static void download(String options, String[] args) throws IOException {
+    private static void download(String[] args) throws IOException {
         LOGGER.debug("Downloading");
+        if (args.length == 0) {
+            System.out.println("Please provide the path to the configuration json file");
+            return;
+        }
+        String options = args[0];
         boolean downloadLaz = false;
         boolean downloadOsm = false;
         boolean downloadGml = false;
@@ -174,21 +201,19 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         LOGGER.debug("Starting application");
-
         init();
-        if (args.length < 2) {
+        if (args.length == 0) {
             System.out.println("""
-                    HELP SCREEN TODO
+                    Please see github repo for instructions on command line arguments
                     """);
             return;
         }
         String command = args[0];
-        String options = args[1];
-        String[] remainingArgs = Arrays.copyOfRange(args, 2,args.length);
+        String[] remainingArgs = Arrays.copyOfRange(args, 1,args.length);
         switch (command) {
-            case "download" -> download(options, remainingArgs);
-            case "test" -> runTest(options, remainingArgs);
-            case "runAll" -> runAll(options, remainingArgs);
+            case "download" -> download(remainingArgs);
+            case "test" -> runTest(remainingArgs);
+            case "runAll" -> runAll(remainingArgs);
             case "createTemplates" -> createTemplates();
         }
     }

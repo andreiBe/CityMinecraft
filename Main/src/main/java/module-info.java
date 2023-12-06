@@ -13,6 +13,7 @@ module Main {
     requires CityGml;
     requires GroundColor;
     requires org.apache.logging.log4j.core;
+    requires java.desktop;
 
     exports org.patonki.downloader;
     exports org.patonki.main;

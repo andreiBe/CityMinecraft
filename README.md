@@ -11,6 +11,10 @@ Documentation can be found in the GitHub wiki (coming soon)
 
 Images:
 ![View of the city](imgs/example.png)
+
+## Running the program (TODO)
+
+java -XX:StartFlightRecording,filename=flight.jfr -ea -Xmx6g -jar Main/target/Main-1.0-SNAPSHOT-bin.jar runAll inputData/templates/run-options-template.json inputData/lasFiles --copy --files 23463500_6705500.laz,23464000_6705500.laz,23464500_6705500.laz,23464000_6706000.laz,23463500_6706000.laz
 ## Contributing
 
 Make a pull request

@@ -76,23 +76,6 @@ public class WorldDecorator {
             return this.XYDistance(p) <= radius;
         }
     }
-    private static class LeafTree extends TreePointTree {
-        protected final double a,b,c,d;
-        public LeafTree(TreePoint p, double a, double b, double c, double d) {
-            super(p);
-            this.a = a;
-            this.b = b;
-            this.c = c;
-            this.d = d;
-        }
-
-        @Override
-        public boolean contains(TreePoint p) {
-            double xyDist = p.XYDistance(this);
-            double zDist = p.ZDistance(this);
-            return this.a * zDist*zDist + this.b * zDist + this.c > xyDist;
-        }
-    }
 
     private static class TreePoint {
         private final int x,y,z;
@@ -220,10 +203,9 @@ public class WorldDecorator {
             treePointTop[block.x()][block.y()] = (currentHighestPoint == null ? treePoint : ( currentHighestPoint.z > treePoint.z ? currentHighestPoint : treePoint));
             treePoints.add(treePoint);
         }
+        if (treePoints.size() == 0) return new ArrayList<>();
         //sorting based on height
         treePoints.sort(Comparator.comparingInt(o -> o.z));
-
-        if (treePoints.get(0).z > treePoints.get(1000).z) throw new NullPointerException();
 
         ArrayList<TreePointTree> treeCenters = new ArrayList<>();
 
@@ -323,12 +305,10 @@ public class WorldDecorator {
     };
     private Block getGrassDecoration(Random rng) {
         int number = rng.nextInt(100);
-        if (number < 70) {
+        if (number < 70) { //grass
             return new Block((byte) 31, (byte) 1, Classification.LOW_VEGETATION);
         }
-        if (number < 80) {
-            return new Block((byte) 175, (byte) 2, Classification.LOW_VEGETATION);
-        }
+        //else flowers
         return flowers[rng.nextInt(flowers.length)];
     }
 }

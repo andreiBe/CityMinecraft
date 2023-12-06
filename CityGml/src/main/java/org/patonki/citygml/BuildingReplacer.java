@@ -26,10 +26,14 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
     private final boolean[][] check;
 
     private final HashSet<Coordinate> visitedCoordinates = new HashSet<>();
+    private final GroundLayer groundLayer;
+
     private record Coordinate(int x, int y, int z) {}
 
     public BuildingReplacer(Blocks blocks, Block buildingBlock, Block roofBlock) {
         this.blocks = blocks;
+        this.groundLayer = blocks.getGroundLayer();
+
         this.buildingBlock = buildingBlock;
         this.roofBlock = roofBlock;
         this.check = new boolean[blocks.getWidth()][blocks.getLength()];
@@ -61,7 +65,6 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
         }
     }
     private void acceptLocations(BlockLocations locations) {
-        GroundLayer groundLayer = blocks.getGroundLayer();
 
         if (locations.getLocations().size() == 0) return;
 
@@ -111,8 +114,6 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
                 }
             }
         }
-
-        blocks.getGroundLayer();
     }
     @Override
     public void accept(BlockLocations locations) {

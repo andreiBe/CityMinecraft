@@ -1,0 +1,38 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 http://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>bin</id>
+
+    <formats>
+        <format>jar</format>
+    </formats>
+    <containerDescriptorHandlers>
+        <containerDescriptorHandler>
+            <handlerName>metaInf-services</handlerName>
+        </containerDescriptorHandler>
+        <containerDescriptorHandler>
+            <handlerName>metaInf-spring</handlerName>
+        </containerDescriptorHandler>
+        <containerDescriptorHandler>
+            <handlerName>plexus</handlerName>
+        </containerDescriptorHandler>
+    </containerDescriptorHandlers>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <moduleSets>
+        <moduleSet>
+
+            <!-- Enable access to all projects in the current multimodule build! -->
+            <useAllReactorProjects>true</useAllReactorProjects>
+
+            <!-- Now, select which projects to include in this module-set. -->
+            <includes>
+                <include>org.patonki:Main</include>
+            </includes>
+            <binaries>
+                <unpack>true</unpack>
+            </binaries>
+            <!--https://stackoverflow.com/questions/47310215/merging-meta-inf-services-files-with-maven-assembly-plugin-->
+
+        </moduleSet>
+    </moduleSets>
+</assembly>

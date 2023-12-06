@@ -25,10 +25,10 @@ public class OctTreeBlocks extends Blocks {
 
     /**
      * @param maxSize The maximum number of blocks inside one Node in the oct tree.
-     * @see Blocks#Blocks(int, int, int, int, int, int)
+     * @see Blocks#Blocks(int, int, int, int, int, int, int)
      */
-    public OctTreeBlocks(int width, int length, int height, int minX, int minY, int minZ, int maxSize) {
-        super(width, length, height, minX, minY, minZ);
+    public OctTreeBlocks(int width, int length, int height, int minX, int minY, int minZ, int sideLength, int maxSize) {
+        super(width, length, height, minX, minY, minZ, sideLength);
         this.maxSize = maxSize;
         this.blocks = new ParentNode(0,0,0, width, length, height, maxSize);
     }
@@ -135,9 +135,9 @@ public class OctTreeBlocks extends Blocks {
             //it takes 1 byte to represent a block
 
             //storing the metadata
-            byte[] serialized = new byte[7*4 + blocks.pallet.length * 3 + blocks.width * blocks.length * blocks.height];
-            writeInts(serialized, 0, blocks.width, blocks.length, blocks.height, blocks.minX, blocks.minY, blocks.minZ, blocks.maxSize);
-            int i = 7*4;
+            byte[] serialized = new byte[8*4 + blocks.pallet.length * 3 + blocks.width * blocks.length * blocks.height];
+            writeInts(serialized, 0, blocks.width, blocks.length, blocks.height, blocks.minX, blocks.minY, blocks.minZ, blocks.maxSize, blocks.getSideLength());
+            int i = 8*4;
             //storing the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 Block block = blocks.pallet[palletIndex];
@@ -161,11 +161,11 @@ public class OctTreeBlocks extends Blocks {
 
         @Override
         public OctTreeBlocks deserialize(byte[] ar) {
-            // 7 * 4 = width, length, height, minX, minY, minZ, maxSize as bytes
+            // 8 * 4 = width, length, height, minX, minY, minZ,sideLength maxSize as bytes
             //the palette takes 256*3 bytes
             //it takes 1 byte to represent a block
-            int[] ints = readInts(ar, 0, 7);
-            int width, length, height, minX, minY, minZ, maxSize;
+            int[] ints = readInts(ar, 0, 8);
+            int width, length, height, minX, minY, minZ, maxSize, sideLength;
 
             //the metadata
             width = ints[0];
@@ -175,8 +175,9 @@ public class OctTreeBlocks extends Blocks {
             minY = ints[4];
             minZ = ints[5];
             maxSize = ints[6];
-            OctTreeBlocks blocks = new OctTreeBlocks(width, length, height, minX, minY, minZ, maxSize);
-            int i = 7 * 4;
+            sideLength = ints[7];
+            OctTreeBlocks blocks = new OctTreeBlocks(width, length, height, minX, minY, minZ, sideLength, maxSize);
+            int i = 8 * 4;
             //the pallet
             for (int palletIndex = 0; palletIndex < blocks.pallet.length; palletIndex++) {
                 byte id = ar[i];

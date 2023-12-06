@@ -13,6 +13,7 @@ public class ImageUtil {
         BufferedImage image = imagePath.startsWith("/") ? ImageIO.read(Objects.requireNonNull(ImageUtil.class.getResourceAsStream(imagePath)))
                 : ImageIO.read(new File(imagePath));
 
+
         final byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
         final int width = image.getWidth();
         final int height = image.getHeight();

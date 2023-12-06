@@ -16,6 +16,7 @@ public class Settings {
 
     private final int threadCount;
 
+
     public Settings(LasReaderSettings lasSettings, OpenStreetMapSettings osmSettings, GmlOptions gmlSettings, GroundColorSettings groundColorSettings, int threadCount) {
         this.lasSettings = lasSettings;
         this.osmSettings = osmSettings;

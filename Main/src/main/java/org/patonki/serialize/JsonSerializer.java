@@ -191,7 +191,9 @@ public class JsonSerializer {
         ColorToBlockConverterOptions blackAndWhiteColorOptions = blackAndWhiteColorOptions();
         ColorToBlockConverterOptions groundColorColorOptions = groundColorOptions();
 
-        LasReaderSettings lasReaderSettings = new LasReaderSettings(iMap, blockMap, roofBlock, ignored, useOctTree);
+        int sideLength = 500;
+
+        LasReaderSettings lasReaderSettings = new LasReaderSettings(iMap, blockMap, roofBlock, ignored, useOctTree,sideLength);
         OpenStreetMapSettings openStreetMapSettings = new OpenStreetMapSettings(
                 "EPSG:3877",
                 "EPSG:4326",

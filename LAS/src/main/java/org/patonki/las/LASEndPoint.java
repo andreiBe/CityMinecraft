@@ -38,8 +38,8 @@ public class LASEndPoint {
         this.converter = new LasDataToBlocks(settings::mapToBlock);
         //the implementation to use for the storage of blocks
         this.blockMaker = settings.useOctTree()
-                ? (w, l, h, x, y, z) -> new OctTreeBlocks(w,l,h,x,y,z, 25000)
-                : ArrayBlocks::new;
+                ? (w, l, h, x, y, z) -> new OctTreeBlocks(w,l,h,x,y,z, settings.getSideLength(), 25000)
+                : ((w, l, h, x, y, z) -> new ArrayBlocks(w,l,h,x,y,z,settings.getSideLength()));
     }
 
     /**
