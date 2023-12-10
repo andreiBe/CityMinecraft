@@ -15,14 +15,12 @@ public class BlockDataFixer {
 
     private final Block buildingBlock;
     private final Block waterBlock;
-    private final Block seaBottomBlock;
     private final Block unknownBlock;
 
     private final Block roofBlock;
-    public BlockDataFixer(Block buildingBlock, Block waterBlock, Block seaBottomBlock, Block unknownBlock, Block roofBlock) {
+    public BlockDataFixer(Block buildingBlock, Block waterBlock, Block unknownBlock, Block roofBlock) {
         this.buildingBlock = buildingBlock;
         this.waterBlock = waterBlock;
-        this.seaBottomBlock = seaBottomBlock;
         this.unknownBlock = unknownBlock;
         this.roofBlock = roofBlock;
     }
@@ -233,11 +231,16 @@ public class BlockDataFixer {
         LOGGER.debug("Filling in the ground");
         XYZBlock[][] ground = blocks.getGroundLayerIncomplete();
         PriorityQueue<XYZBlock> edges = new PriorityQueue<>(Comparator.comparingInt(XYZBlock::z));
+        boolean allNull = true; //very rare case
         for (int x = 0; x < blocks.getWidth(); x++) {
             for (int y = 0; y < blocks.getLength(); y++) {
                 List<XYZBlock> nullNeighbors = nullNeighbors(x, y, 0, ground);
+                if (ground[x][y] != null) allNull = false;
                 if (!nullNeighbors.isEmpty() && ground[x][y] != null) edges.add(ground[x][y]);
             }
+        }
+        if (allNull) {
+            edges.add(new XYZBlock(0,0,0, this.waterBlock));
         }
         while (!edges.isEmpty()) {
             XYZBlock edge = edges.poll();

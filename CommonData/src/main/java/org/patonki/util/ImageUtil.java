@@ -1,5 +1,6 @@
 package org.patonki.util;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
@@ -10,8 +11,14 @@ import java.util.Objects;
 public class ImageUtil {
     //stolen from https://stackoverflow.com/a/17175454
     public static int[][] convertImageTo2DArray(String imagePath) throws IOException {
-        BufferedImage image = imagePath.startsWith("/") ? ImageIO.read(Objects.requireNonNull(ImageUtil.class.getResourceAsStream(imagePath)))
+        BufferedImage image;
+        try {
+            image = imagePath.startsWith("/") ? ImageIO.read(Objects.requireNonNull(ImageUtil.class.getResourceAsStream(imagePath)))
                 : ImageIO.read(new File(imagePath));
+
+        } catch (IIOException e) {
+            throw new IOException("Can't read image: " + imagePath);
+        }
 
 
         final byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();

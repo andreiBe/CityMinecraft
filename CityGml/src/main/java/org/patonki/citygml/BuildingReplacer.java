@@ -43,8 +43,7 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
         if (block == null) return false;
         if (block.classification() == Classification.UNKNOWN) return true;
 
-        return block.classification() == Classification.BUILDING &&
-                (block.equals(this.buildingBlock) || block.equals(this.roofBlock));
+        return block.equals(this.buildingBlock) || block.equals(this.roofBlock);
     }
     private void removeOldBuilding(int x, int y, int z) {
         Queue<Coordinate> queue = new LinkedList<>();
@@ -65,7 +64,6 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
         }
     }
     private void acceptLocations(BlockLocations locations) {
-
         if (locations.getLocations().size() == 0) return;
 
         BoundingBox3D boundingBox = locations.getBoundingBox();
@@ -97,7 +95,7 @@ public class BuildingReplacer implements Consumer<BlockLocations> {
             Block b = new Block(location.id(), location.data(), Classification.BUILDING);
             Block previousBlock = blocks.get(x,y,z);
             //do not replace ground blocks
-            if (groundLayer.inRange(x,y) && groundLayer.getXYZBlock(x,y).z() != z
+            if (groundLayer.inRange(x,y) && groundLayer.getHeightAt(x,y) != z
                     && (previousBlock == null || previousBlock.classification() != Classification.GROUND)) {
                 blocks.set(x,y,z, b);
             }

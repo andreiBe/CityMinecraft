@@ -1,11 +1,11 @@
 package org.patonki.waterways;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.patonki.FeatureReader;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 import org.patonki.openstreetmap.settings.WaterwayInfo;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
 import org.patonki.types.WaterWayType;
 
 import java.awt.*;

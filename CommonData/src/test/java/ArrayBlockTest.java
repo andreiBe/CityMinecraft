@@ -3,13 +3,18 @@ import org.patonki.blocks.ArrayBlocks;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@SuppressWarnings("unchecked")
 public class ArrayBlockTest {
 
     @Test
@@ -60,7 +65,10 @@ public class ArrayBlockTest {
             }
 
         } catch (Exception e) {
-            serializedFile.delete();
+            boolean success = serializedFile.delete();
+            if (!success) {
+                System.out.println("Unable to delete serialized file");
+            }
             throw e;
         }
 
@@ -82,7 +90,10 @@ public class ArrayBlockTest {
         assertEquals(blocks.getMinZ(), deserialized.getMinZ());
 
         Block block = blocks.get(7,6,5);
+        assertNotNull(block);
+
         Block deserializedBlock = deserialized.get(7,6,5);
+        assertNotNull(deserializedBlock);
 
         assertEquals(block.id(), deserializedBlock.id());
         assertEquals(block.data(), deserializedBlock.data());

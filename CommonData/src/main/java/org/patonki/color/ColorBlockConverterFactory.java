@@ -4,11 +4,9 @@ import org.patonki.color.colorBlockConverters.BlackAndWhiteBlocks;
 import org.patonki.color.colorBlockConverters.ColorToMinecraftBlock;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
-import org.patonki.util.Pair;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.function.Supplier;
 
 public class ColorBlockConverterFactory {
     private record Parameters(Classification classification, String texturesPath, ColorToBlockConverterOptions options) {
@@ -26,8 +24,6 @@ public class ColorBlockConverterFactory {
         if (cached.containsKey(params)) {
             return cached.get(params);
         }
-        System.out.println("Cached");
-        System.out.println(cached);
 
         var result = constructor.init(classification, texturesPath,bannedBlocks,  options);
         cached.put(params, result);

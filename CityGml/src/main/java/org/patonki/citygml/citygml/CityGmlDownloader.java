@@ -4,18 +4,17 @@ import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.patonki.citygml.parser.CityGmlParser;
 import org.patonki.citygml.features.BuildingCollection;
+import org.patonki.citygml.features.ImgTexture;
+import org.patonki.citygml.features.Material;
+import org.patonki.citygml.features.Texture;
+import org.patonki.citygml.parser.CityGmlParser;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
-
-import org.patonki.citygml.features.ImgTexture;
-import org.patonki.citygml.features.Material;
-import org.patonki.citygml.features.Texture;
 
 public class CityGmlDownloader {
     private static final Logger LOGGER = LogManager.getLogger(CityGmlDownloader.class);
@@ -115,30 +114,30 @@ public class CityGmlDownloader {
 
     }
 
-    public BuildingCollection deserialize(int minX, int minY, int maxX, int maxY, int sideLength) throws FileNotFoundException {
-        LOGGER.debug("The coordinates before fix: " + minX + " " + minY + " " + maxX + " " + maxY);
+    public BuildingCollection deserialize(int minX, int minY, int sideLength) throws FileNotFoundException {
         minX -= minX % sideLength;
         minY -= minY % sideLength;
-        if (maxX % sideLength > 5) maxX = maxX - maxX % sideLength + sideLength;
-        else maxX -= maxX % sideLength;
-        if (maxY % sideLength > 5) maxY = maxY - maxY % sideLength + sideLength;
-        else maxY -= maxY % sideLength;
-
+        int maxX = minX + sideLength;
+        int maxY = minY + sideLength;
 
         String filtered = getPathToFilteredBuildingCollection(minX, minY, maxX, maxY);
         LOGGER.info("Reading gml from " + filtered);
         JsonReader jsonReader = new JsonReader(new FileReader(filtered));
         return this.buildingSerializer.fromJson(jsonReader, BuildingCollection.class);
     }
-    public void downloadAndParseGml(int minX, int minY, int maxX, int maxY, String url, String gmlVersion) throws IOException {
+    public void downloadAndParseGml(int minX, int minY, int maxX, int maxY, String url, String gmlVersion, boolean overrideParsed) throws IOException {
         downloadFileFromWFSServer(minX, minY, maxX, maxY, url, gmlVersion);
         CityGmlParser parser = new CityGmlParser(getImgDownloadFolder(minX, minY, maxX, maxY));
 
         try {
+            String pathToWrite = getPathToFilteredBuildingCollection(minX, minY, maxX, maxY);
+            if (!overrideParsed && new File(pathToWrite).exists()) {
+                LOGGER.info("Not parsing file because the parsed file already exists at: " + pathToWrite);
+                return;
+            }
             BuildingCollection collection = parser.readFeatures(getPathToDownloadedGmlFile(minX, minY, maxX, maxY));
             String jsonData = this.buildingSerializer.toJson(collection);
 
-            String pathToWrite = getPathToFilteredBuildingCollection(minX, minY, maxX, maxY);
             try (FileWriter writer = new FileWriter(pathToWrite)) {
                 writer.write(jsonData);
             }

@@ -3,8 +3,6 @@ package org.patonki.citygml;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.patonki.color.ColorCounter;
-import org.patonki.color.ImageAutoLevel;
 import org.patonki.citygml.features.ImgTexture;
 import org.patonki.citygml.features.Material;
 import org.patonki.citygml.features.Point;
@@ -12,19 +10,19 @@ import org.patonki.citygml.features.Polygon3D;
 import org.patonki.citygml.math.Point2D;
 import org.patonki.citygml.math.Vector;
 import org.patonki.citygml.math.Vector2D;
+import org.patonki.color.Color;
+import org.patonki.color.ColorCounter;
+import org.patonki.color.IColorToBlockConverter;
+import org.patonki.color.ImageAutoLevel;
 import org.patonki.data.Block;
 import org.patonki.data.BoundingBox;
-import org.patonki.color.Color;
-import org.patonki.color.IColorToBlockConverter;
 import org.patonki.util.ImageUtil;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
 
 public class TextureReader {
     private static final Logger LOGGER = LogManager.getLogger(TextureReader.class);
@@ -55,8 +53,14 @@ public class TextureReader {
 
         return crossP.z() * crossT.z() < 0;
     }
+    private static class ScaleZeroException extends Exception {
+        public ScaleZeroException(String msg) {
+            super(msg);
+        }
+    }
+    public Scale calculateScale(Point2D[] polygonPoints, Point2D[] texturePoints, int imageHeight, int imageWidth, boolean debug) throws ScaleZeroException {
+        assert polygonPoints.length == texturePoints.length;
 
-    public Scale calculateScale(Point2D[] polygonPoints, Point2D[] texturePoints, int imageHeight, int imageWidth, boolean debug) {
         boolean isReversed = isReversed(polygonPoints, texturePoints);
         if (isReversed) {
             //reversing the y coordinate
@@ -69,10 +73,12 @@ public class TextureReader {
                 int k;
                 for (k = 0; k < polygonPoints.length; k++) {
                     if (k == i || k == j) continue;
-                    if (Vector2D.fromAtoB(texturePoints[i], texturePoints[k]).len() == 0) {
-                        continue;
+                    if (Vector2D.fromAtoB(texturePoints[i], texturePoints[k]).len() != 0) {
+                        break;
                     }
-                    break;
+                }
+                if (k == polygonPoints.length) {
+                    throw new ScaleZeroException("Can't build two vectors to calculate scale: " + Arrays.toString(polygonPoints));
                 }
 
                 Vector2D tv1 = Vector2D.fromAtoB(texturePoints[i], texturePoints[j]);
@@ -121,7 +127,7 @@ public class TextureReader {
             }
         }
         if (maxScaleX == 0 || maxScaleY == 0)
-            throw new IllegalArgumentException("Scale cannot be zero: " + maxScaleX + " " + maxScaleY + " " + imageWidth + " " + imageHeight);
+            throw new ScaleZeroException("Scale cannot be zero: " + maxScaleX + " " + maxScaleY + " " + imageWidth + " " + imageHeight);
 
         return new Scale(maxScaleX, maxScaleY, angleDif, new Vector2D(texturePoints[0]), new Vector2D(polygonPoints[0]), isReversed, texturePoints);
     }
@@ -194,14 +200,21 @@ public class TextureReader {
         try {
             colors = getAutoLeveledImage(texture.getImgPath());
         } catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.error("Error while reading image", e);
             return createDefault(w,h,converter);
         }
         var ret = new Block[w][h];
 
         int imageHeight = colors.length;
         int imageWidth = colors[0].length;
-        Scale scale = calculateScale(polygon.getPoints2DCopy(), texture.getCoordinates(imageWidth, imageHeight), imageHeight, imageWidth, debug);
+
+        Scale scale;
+        try {
+            scale = calculateScale(polygon.getPoints2DCopy(), texture.getCoordinates(imageWidth, imageHeight), imageHeight, imageWidth, debug);
+        } catch (ScaleZeroException e) {
+            LOGGER.warn(e.getMessage());
+            return createDefault(w,h, converter);
+        }
 
 
         if (scale.isReversed) {
@@ -241,11 +254,10 @@ public class TextureReader {
                         var pair = converter.convertAndGetGroup(Color.fromInt(color));
                         counter.add(pair.second(), pair.first());
                         counterAll.add(pair.second(), pair.first());
-                        colors[textureY][textureX] = y % 2 == 0 ? 0xffff00ff : (x % 2 == 0 ? 0xffff0000: 0xff0000ff);
                     }
                 }
                 if (!wallOneColor)
-                    ret[x][y] = counter.getMostCommon();
+                    ret[x][y] = counter.isEmpty() ? converter.convert(Color.WHITE) : counter.getMostCommon();
             }
         }
 

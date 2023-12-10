@@ -36,7 +36,7 @@ public class Downloader {
     public record DownloadSettings(LasDownloadSettings lasSettings, AerialDownloadSettings aerialSettings,
                                    OsmDownloadSettings osmSettings, GmlDownloadSettings gmlSettings) {
     }
-    public void download(boolean las, boolean osm, boolean gml, boolean aerial,
+    public void download(boolean las, boolean osm, boolean gml, boolean aerial, boolean overrideParsed,
                          String lasDownloadFolder, String aerialDownloadFolder, String osmDownloadFolder, String gmlDownloadFolder,
                          String texturePackFolder, String minecraftWorldFolder,
                          String[] unfilteredShapefileLocations, String filteredInputDataPath) {
@@ -50,7 +50,7 @@ public class Downloader {
             downloadAerialData(settings.aerialSettings(), aerialDownloadFolder);
         }
         if (gml) {
-            downloadGmlData(settings.gmlSettings(), gmlDownloadFolder, texturePackFolder);
+            downloadGmlData(settings.gmlSettings(), gmlDownloadFolder, texturePackFolder, overrideParsed);
         }
         checkTemplateWorldExists(minecraftWorldFolder);
     }
@@ -104,9 +104,14 @@ public class Downloader {
             }
         }
     }
+    private void createFolder(String path) {
+        File folder = new File(path);
+        if (!folder.exists() && folder.mkdirs()) {
+            LOGGER.error("Unable to create aerial download folder at " + folder.getPath());
+        }
+    }
     private void downloadAerialData(AerialDownloadSettings settings, String aerialDownloadFolder) {
-        File dataFolder = new File(aerialDownloadFolder);
-        dataFolder.mkdirs();
+        createFolder(aerialDownloadFolder);
 
         downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
             String outputPath = aerialDownloadFolder + "/" + x + "_"+y+".png";
@@ -128,8 +133,7 @@ public class Downloader {
         });
     }
     private void downloadLasData(LasDownloadSettings settings, String lasDownloadFolder) {
-        File dataFolder = new File(lasDownloadFolder);
-        dataFolder.mkdirs();
+        createFolder(lasDownloadFolder);
         downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
             String downloadFilePath = settings.lasDataPath() + "/" + settings.lasFormat()
                     .replace("$X", x + "")
@@ -160,7 +164,11 @@ public class Downloader {
             File parentDir = new File(texturesFolder);
             for (File file : Objects.requireNonNull(parentDir.listFiles())) {
                 if (file.getName().startsWith("bedrock-samples") && file.isDirectory()) {
-                    file.renameTo(new File(file.getParent()+"/texturePack"));
+                    File rename = new File(file.getParent()+"/texturePack");
+                    boolean success = file.renameTo(rename);
+                    if (!success) {
+                        LOGGER.error("Unable to rename file to " + rename.getPath());
+                    }
                 }
             }
         } catch (IOException e) {
@@ -168,9 +176,9 @@ public class Downloader {
             LOGGER.error(e);
         }
     }
-    private void downloadGmlData(GmlDownloadSettings settings, String gmlDownloadFolder, String texturesFolder) {
+    private void downloadGmlData(GmlDownloadSettings settings, String gmlDownloadFolder, String texturesFolder, boolean overrideParsed) {
         File minecraftTexturePackFolder = new File(texturesFolder);
-        minecraftTexturePackFolder.mkdirs();
+        createFolder(texturesFolder);
         if (Objects.requireNonNull(minecraftTexturePackFolder.list()).length == 0) {
             this.downloadTexturePackFromMicrosoft(texturesFolder);
         }
@@ -179,18 +187,16 @@ public class Downloader {
         downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
             LOGGER.info("Downloading gml area " + x + "," + y + " to " +(x + settings.stepMeter()) + "," + (y + settings.stepMeter()));
             try {
-                downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(), settings.gmlVersion());
+                downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(), settings.gmlVersion(), overrideParsed);
             } catch (IOException e) {
                 LOGGER.error("Error while downloading CityGml buildings");
-                LOGGER.error(e);
+                LOGGER.error("Error downloading gml area " + x + " " + y, e);
             }
         });
     }
     private void downloadZipToFolder(String downloadFolderPath, String urlPath) {
         File downloadFolder = new File(downloadFolderPath);
-        if (!downloadFolder.exists()) {
-            downloadFolder.mkdirs();
-        }
+        createFolder(downloadFolderPath);
 
         try {
             URL url = new URL(urlPath);
@@ -209,7 +215,7 @@ public class Downloader {
                             throw new IOException("Failed to create directory " + parent);
                         }
                         // write file content
-                        try (FileOutputStream fos = new FileOutputStream(newFile);) {
+                        try (FileOutputStream fos = new FileOutputStream(newFile)) {
                             int len;
                             while ((len = zis.read(buffer)) > 0) {
                                 fos.write(buffer, 0, len);

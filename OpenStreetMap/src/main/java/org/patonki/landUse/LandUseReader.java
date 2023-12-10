@@ -1,9 +1,9 @@
 package org.patonki.landUse;
 
-import org.patonki.data.Block;
-import org.patonki.FeatureReader;
-import org.patonki.openstreetmap.settings.LandUseInfo;
 import org.locationtech.jts.geom.Coordinate;
+import org.patonki.FeatureReader;
+import org.patonki.data.Block;
+import org.patonki.openstreetmap.settings.LandUseInfo;
 import org.patonki.types.LandUseType;
 
 import java.awt.*;

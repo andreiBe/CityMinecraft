@@ -7,11 +7,10 @@ import org.patonki.citygml.features.BuildingStructure;
 import org.patonki.citygml.features.Point;
 import org.patonki.citygml.features.Polygon3D;
 import org.patonki.citygml.math.Point2D;
-import org.patonki.data.*;
 import org.patonki.color.IColorToBlockConverter;
+import org.patonki.data.*;
 import org.patonki.util.Counter;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +23,8 @@ import java.util.Map;
  */
 public class BuildingToCubes {
     private record Id(String id) {}
+
+    //trying to make the textures of buildings more smooth
     private void fixRandomSportOfDifferentColor(HashMap<Id, List<BlockLocation>> structures) {
         for (Map.Entry<Id, List<BlockLocation>> entry : structures.entrySet()) {
             List<BlockLocation> smallList = entry.getValue();
@@ -36,7 +37,7 @@ public class BuildingToCubes {
             //finding all blocks in a radius of 5
             Counter<Block> counter = new Counter<>();
             for (List<BlockLocation> list : structures.values()) {
-                if (list == smallList) continue; // == comparison for same instance
+                if (list == smallList) continue; // "==" comparison to compare for same instance
                 for (BlockLocation blockLocation : list) {
                     if (p.distance(blockLocation.x(), blockLocation.y()) <= 5) {
                         counter.add(new Block(blockLocation.id(), blockLocation.data(), Classification.BUILDING));
@@ -104,7 +105,7 @@ public class BuildingToCubes {
      */
     public BlockLocations convert(Building building, boolean oneColor, IColorToBlockConverter colorConverter) {
         BoundingBox3D building_box = building.getBBox();
-        //Bounding box defined by integer that is guaranteed to be larger than
+        //Bounding box that is guaranteed to be larger than
         //the floating point bounding box
         IntBoundingBox3D vbox = building.getVBox();
 

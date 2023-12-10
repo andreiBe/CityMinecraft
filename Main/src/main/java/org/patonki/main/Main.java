@@ -8,9 +8,6 @@ import org.patonki.downloader.Downloader;
 import org.patonki.serialize.JsonSerializer;
 import org.patonki.settings.Settings;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,11 +45,11 @@ public class Main {
     private static final String CACHE_FILE_LOCATION = OUTPUT_FOLDER + "/cache";
     private static final String MINECRAFT_SCHEMATIC_OUTPUT_PATH = OUTPUT_FOLDER +  "/schematics";
 
-
-
     private static void init() {
         File inputFolder = new File(INPUT_DATA_FOLDER);
-        if (!inputFolder.exists()) inputFolder.mkdirs();
+        if (!inputFolder.exists() && !inputFolder.mkdirs()) {
+            LOGGER.error("Unable to create inputData folder at " + INPUT_DATA_FOLDER);
+        }
     }
 
     private static void setLogLevel(Level level) {
@@ -68,11 +65,12 @@ public class Main {
         args = Arrays.copyOfRange(args, 1,args.length);
 
         Settings settings = JsonSerializer.deserializeFromFile(options, Settings.class);
-        setLogLevel(Level.DEBUG);
         String lazFileFolder = args[0];
 
         args = Arrays.copyOfRange(args, 1, args.length);
         CommandLineArgs commandLineArgs = readCommandLineArguments(args);
+        System.out.println("Log level " + commandLineArgs.logLevel());
+        setLogLevel(commandLineArgs.logLevel());
         try {
             WorldBuilder.runAll(settings,
                     commandLineArgs.start, commandLineArgs.end, commandLineArgs.skipped,commandLineArgs.cached,
@@ -86,17 +84,21 @@ public class Main {
                     MINECRAFT_SCHEMATIC_OUTPUT_PATH,
                     TEMPLATE_MINECRAFT_WORLD,
                     GML_DOWNLOAD_FOLDER, TEXTURE_PACK_FOLDER,
-                    RESULTING_MINECRAFT_WORLD_PATH, commandLineArgs.copyToMinecraft());
+                    RESULTING_MINECRAFT_WORLD_PATH, commandLineArgs.copyToMinecraft(), commandLineArgs.overwrite(), commandLineArgs.deleteOld());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped, ExecutionStep[] cached, boolean copyToMinecraft, String[] lasFiles){}
+    private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped,
+                                   ExecutionStep[] cached, boolean copyToMinecraft, String[] lasFiles, Level logLevel, boolean overwrite, boolean deleteOld){}
     private static CommandLineArgs readCommandLineArguments(String[] args) {
         ExecutionStep start = ExecutionStep.BEGINNING;
         ExecutionStep end = ExecutionStep.END;
         ExecutionStep[] skipped = new ExecutionStep[0];
         ExecutionStep[] cached = new ExecutionStep[0];
+        Level logLevel = Level.DEBUG;
+        boolean overwrite = true;
+        boolean deleteOld = false;
         String[] lasFiles = null;
         boolean copyToMinecraftWorld = false;
         for (int i = 0; i < args.length; i++) {
@@ -130,10 +132,25 @@ public class Main {
                     lasFiles = nextArg.split(",");
                     i++;
                 }
+                case "--log" -> {
+                    String nextArg = args[i+1];
+                    logLevel = Level.valueOf(nextArg);
+                    i++;
+                }
+                case "--overwrite" -> {
+                    String nextArg = args[i+1];
+                    overwrite = Boolean.parseBoolean(nextArg);
+                    i++;
+                }
+                case  "--delete" -> {
+                    String nextArg = args[i+1];
+                    deleteOld = Boolean.parseBoolean(nextArg);
+                    i++;
+                }
                 default -> LOGGER.warn("Unknown cmd argument: " + arg);
             }
         }
-        return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld, lasFiles);
+        return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld, lasFiles, logLevel, overwrite, deleteOld);
     }
     private static void download(String[] args) throws IOException {
         LOGGER.debug("Downloading");
@@ -146,17 +163,20 @@ public class Main {
         boolean downloadOsm = false;
         boolean downloadGml = false;
         boolean downloadAerial = false;
+        boolean overrideParsed = true;
         for (String arg : args) {
             switch (arg) {
                 case "-las" -> downloadLaz = true;
                 case "-osm" -> downloadOsm = true;
                 case "-gml" -> downloadGml = true;
                 case "-aerial" -> downloadAerial = true;
+                case "-noparse" -> overrideParsed = false;
+                case "-nolog" -> setLogLevel(Level.WARN);
             }
         }
         Downloader.DownloadSettings settings = JsonSerializer.deserializeFromFile(options, Downloader.DownloadSettings.class);
         Downloader downloader = new Downloader(settings);
-        downloader.download(downloadLaz,downloadOsm,downloadGml,downloadAerial,
+        downloader.download(downloadLaz,downloadOsm,downloadGml,downloadAerial,overrideParsed,
                 LAS_FILE_DOWNLOAD_LOCATION, AERIAL_FILE_DOWNLOAD_LOCATION, SHAPE_FILE_DOWNLOAD_LOCATION,GML_DOWNLOAD_FOLDER, TEXTURE_PACK_DOWNLOAD_FOLDER, TEMPLATE_MINECRAFT_WORLD,
                 UNFILTERED_SHAPEFILE_LOCATIONS, FILTERED_INPUT_DATA_FOLDER);
     }

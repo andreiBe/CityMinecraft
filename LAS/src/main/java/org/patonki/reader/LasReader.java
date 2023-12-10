@@ -64,7 +64,7 @@ public class LasReader {
     }
 
     public LazData read(String filePath) {
-        LOGGER.info("Las reader starting to read!");
+        LOGGER.info("Las reader starting to read! " + filePath);
         long start = System.currentTimeMillis();
         LASReader reader = new LASReader(new File(filePath));
         LASHeader header = reader.getHeader();

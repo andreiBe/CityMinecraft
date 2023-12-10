@@ -11,6 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="GroundColor" />
     <orderEntry type="module" module-name="CommonData" />
     <orderEntry type="library" name="Maven: org.jetbrains:annotations:24.0.1" level="project" />
     <orderEntry type="module" module-name="OpenStreetMap" />

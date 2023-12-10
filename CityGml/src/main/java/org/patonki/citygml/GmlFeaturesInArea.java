@@ -3,11 +3,11 @@ package org.patonki.citygml;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.patonki.color.ColorBlockConverterFactory;
 import org.patonki.citygml.citygml.BlockLocations;
 import org.patonki.citygml.citygml.GmlOptions;
 import org.patonki.citygml.features.Building;
 import org.patonki.citygml.features.BuildingCollection;
+import org.patonki.color.ColorBlockConverterFactory;
 import org.patonki.color.IColorToBlockConverter;
 import org.patonki.data.Classification;
 import org.patonki.util.ProgressLogger;

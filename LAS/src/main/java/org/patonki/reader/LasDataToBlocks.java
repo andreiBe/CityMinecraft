@@ -7,8 +7,6 @@ import org.patonki.data.Block;
 import org.patonki.data.Classification;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class LasDataToBlocks {
     private final BlockSupplier supplier;

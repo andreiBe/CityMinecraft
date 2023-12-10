@@ -1,5 +1,8 @@
 package org.patonki.main;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.patonki.blocks.ArrayBlocks;
 import org.patonki.blocks.Blocks;
 import org.patonki.blocks.OctTreeBlocks;
@@ -10,10 +13,8 @@ import org.patonki.data.BlockSerializer;
 import org.patonki.data.Classification;
 import org.patonki.decorator.WorldDecorator;
 import org.patonki.groundcolor.GroundColorEndpoint;
-import org.patonki.openstreetmap.OsmEndPoint;
 import org.patonki.las.LASEndPoint;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.patonki.openstreetmap.OsmEndPoint;
 import org.patonki.settings.Settings;
 
 import java.io.File;
@@ -21,7 +22,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class WorldBuilder {
     private final LASEndPoint LASEndPoint;
     private final GroundColorEndpoint groundColorEndpoint;
@@ -41,11 +44,17 @@ public class WorldBuilder {
     private final ExecutionStep startStep;
     private final ExecutionStep endStep;
 
+    private static final Level STEP = Level.forName("STEP", 250);
+    private final boolean overwrite;
+    private final boolean deleteOldCache;
 
     private WorldBuilder(Settings settings, MinecraftWorldWriter worldWriter,
                          String cacheFolderPath, String aerialImagePath, String landUsePath,
                          String roadsPath, String waterwaysPath, String cityGmlDownloadFolder, String texturesPath,
-                         ExecutionStep startStep, ExecutionStep endStep, ExecutionStep[] skippedSteps,  ExecutionStep[] cachedSteps, boolean multiThreaded) {
+                         ExecutionStep startStep, ExecutionStep endStep, ExecutionStep[] skippedSteps,  ExecutionStep[] cachedSteps, boolean multiThreaded,
+                         boolean overwrite, boolean deleteOldCache) {
+        this.overwrite = overwrite;
+        this.deleteOldCache = deleteOldCache;
         this.LASEndPoint = new LASEndPoint(settings.getLasSettings());
         this.groundColorEndpoint = new GroundColorEndpoint(settings.getGroundColorSettings(), texturesPath, aerialImagePath);
         this.cachedSteps = cachedSteps;
@@ -106,7 +115,9 @@ public class WorldBuilder {
             String cityGmlDownloadPath,
             String texturePackPath,
             String absolutePathToResultingMinecraftWorld,
-            boolean copyToMinecraft) throws IOException, LasFileFormatException {
+            boolean copyToMinecraft,
+            boolean overwrite,
+            boolean deleteOldCache) throws IOException, LasFileFormatException {
         File lasFolder = new File(lazFileFolder);
         File[] files;
 
@@ -116,7 +127,7 @@ public class WorldBuilder {
                 throw new IOException("Can't open las file folder!");
             }
         } else {
-            LOGGER.debug("Running " + lasFiles.length + " las files");
+            LOGGER.log(STEP, "Running " + lasFiles.length + " las files");
             files = Arrays.stream(lasFiles).map((l) -> new File(lazFileFolder+"/"+ l)).toArray(File[]::new);
         }
 
@@ -129,7 +140,7 @@ public class WorldBuilder {
             LOGGER.warn("More than ten threads: " + threadCount +" changing to 10" );
             threadCount = 10;
         }
-        LOGGER.debug("Running " + threadCount + " threads");
+        LOGGER.log(STEP, "Running " + threadCount + " threads");
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         ArrayList<Future<?>> futures = new ArrayList<>();
@@ -141,14 +152,25 @@ public class WorldBuilder {
         }
         boolean multiThreadBuildings = files.length == 1;
         final var finalWriter = writer;
+        AtomicInteger totalDone = new AtomicInteger();
+
         for (File file : files) {
             String lazFile = file.getAbsolutePath();
             Future<?> future = executor.submit((Callable<Void>) () -> {
-                WorldBuilder builder = new WorldBuilder(
-                        settings, finalWriter, cacheFolderPath,aerialImagePath,
-                        landUsePath,roadsPath,waterwaysPath,
-                        cityGmlDownloadPath,texturePackPath, startStep, endStep, skippedSteps,cachedSteps, multiThreadBuildings);
-                builder.run(lazFile, schematicsFolder);
+                try {
+                    WorldBuilder builder = new WorldBuilder(
+                            settings, finalWriter, cacheFolderPath,aerialImagePath,
+                            landUsePath,roadsPath,waterwaysPath,
+                            cityGmlDownloadPath,texturePackPath, startStep, endStep, skippedSteps,cachedSteps, multiThreadBuildings,overwrite,deleteOldCache);
+                    builder.run(lazFile, schematicsFolder);
+
+                    totalDone.getAndIncrement();
+                    LOGGER.log(STEP, "Done " + totalDone.get() + "/" + files.length);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    LOGGER.error("Error in las file " + lazFile);
+                    LOGGER.error(e);
+                }
                 return null;
             });
             futures.add(future);
@@ -186,7 +208,9 @@ public class WorldBuilder {
     }
     private void run(String lazFile,
                      String schematicsFolder) throws Exception {
-        Executor executor = new Executor(lazFile, this.startStep, this.endStep, this.skippedSteps, this.cacheFolderPath, this.serializer, this.cachedSteps);
+        Executor executor = new Executor(lazFile, this.startStep, this.endStep,
+                this.skippedSteps, this.cacheFolderPath,
+                this.serializer, this.cachedSteps, this.overwrite, this.deleteOldCache);
 
         LOGGER.info("World builder starting...");
         executor.exec(() -> LASEndPoint.convertLazDataToBlocks(lazFile), ExecutionStep.READ_LAS);
@@ -209,11 +233,11 @@ public class WorldBuilder {
             schematicCreator.writeSchematic(getSchematicFileName(blocks, schematicsFolder),
                     data.blockIds(), data.blockData(), data.width(), data.length(), data.height());
 
-        }, ExecutionStep.SCHEMATIC);
+        }, ExecutionStep.SCHEMATIC, false);
 
         executor.exec(blocks -> {
             worldWriter.writeSchematicToWorld(getSchematicFileName(blocks, schematicsFolder));
-        }, ExecutionStep.MINECRAFT_WORLD);
+        }, ExecutionStep.MINECRAFT_WORLD, false);
 
         LOGGER.info("World builder exiting...");
     }

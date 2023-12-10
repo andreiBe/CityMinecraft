@@ -222,7 +222,7 @@ public abstract class Blocks implements Iterable<XYZBlock>{
      * @return list containing the items
      */
     public List<XYZBlock> xyNeighborsList(int x, int y, int z) {
-        ArrayList<XYZBlock> XYZBlocks = new ArrayList<>();
+        ArrayList<XYZBlock> XYZBlocks = new ArrayList<>(4);
         addIfNotNull(XYZBlocks, x-1, y, z);
         addIfNotNull(XYZBlocks, x+1, y, z);
         addIfNotNull(XYZBlocks, x, y-1, z);

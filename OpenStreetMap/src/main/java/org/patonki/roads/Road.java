@@ -1,7 +1,7 @@
 package org.patonki.roads;
 
-import org.patonki.data.Block;
 import org.patonki.Feature;
+import org.patonki.data.Block;
 import org.patonki.types.RoadType;
 
 import java.awt.*;

@@ -1,16 +1,13 @@
 package org.patonki.roads;
 
-import org.patonki.data.Block;
-import org.patonki.FeatureReader;
-import org.patonki.openstreetmap.settings.RoadInfo;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.geotools.api.referencing.FactoryException;
-import org.geotools.api.referencing.operation.TransformException;
+import org.patonki.FeatureReader;
+import org.patonki.data.Block;
+import org.patonki.openstreetmap.settings.RoadInfo;
 import org.patonki.types.RoadType;
 
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,9 +54,7 @@ public class RoadReader extends FeatureReader<Road, RoadType, RoadInfo> {
     }
 
     @Override
-    public ArrayList<Road> read(String path) throws FactoryException, IOException, TransformException {
-        ArrayList<Road> roads = super.read(path);
-        Collections.sort(roads);
-        return roads;
+    protected void processAfterRead(ArrayList<Road> list) {
+        Collections.sort(list);
     }
 }

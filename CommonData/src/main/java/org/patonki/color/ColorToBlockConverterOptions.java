@@ -1,4 +1,6 @@
 package org.patonki.color;
 
-public record ColorToBlockConverterOptions(IColorToBlockConverter.BlockEntry[] blockEntries) {
+import java.util.List;
+
+public record ColorToBlockConverterOptions(List<IColorToBlockConverter.BlockEntry> blockEntries) {
 }

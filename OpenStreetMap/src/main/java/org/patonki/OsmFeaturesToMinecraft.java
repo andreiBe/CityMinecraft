@@ -1,15 +1,15 @@
 package org.patonki;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.patonki.blocks.Blocks;
 import org.patonki.blocks.GroundLayer;
 import org.patonki.blocks.XYZBlock;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 import org.patonki.landUse.LandUse;
-import org.patonki.types.LandUseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.patonki.roads.Road;
+import org.patonki.types.LandUseType;
 import org.patonki.waterways.Waterway;
 
 import java.util.ArrayList;

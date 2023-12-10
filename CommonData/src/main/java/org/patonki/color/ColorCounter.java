@@ -30,6 +30,9 @@ public class ColorCounter<T> {
 
         return mostCommon.first();
     }
+    public boolean isEmpty() {
+        return count.isEmpty();
+    }
     public T getMostCommon() {
         IColorToBlockConverter.Group mostCommonGroup = getMostCommonGroup();
         var groupMap = count.get(mostCommonGroup);

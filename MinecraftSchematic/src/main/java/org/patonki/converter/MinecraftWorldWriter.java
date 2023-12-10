@@ -11,6 +11,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
@@ -21,7 +23,9 @@ public class MinecraftWorldWriter {
     private final int minimumYCoordinateOfAllAreas;
     private final ReentrantLock lock = new ReentrantLock();
 
-    private boolean pythonPackagesInstalled = false;
+    private final static int SCHEMATICS_AT_ONCE = 10;
+    private final ArrayBlockingQueue<String> schematics = new ArrayBlockingQueue<>(SCHEMATICS_AT_ONCE);
+    private static boolean pythonPackagesInstalled = false;
 
     public MinecraftWorldWriter(String absolutePathToResultingMinecraftWorld, int minimumXCoordinateOfAllAreas, int minimumYCoordinateOfAllAreas) {
         this.absolutePathToResultingMinecraftWorld = absolutePathToResultingMinecraftWorld;
@@ -65,7 +69,7 @@ public class MinecraftWorldWriter {
      * Useful for debugging purposes
      */
     public void copyWorldToMinecraftWorldsFolder() throws IOException {
-        String minecraftWorldPath = System.getProperty("user.home")  + "\\AppData\\Local\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang\\minecraftWorlds\\output";
+        String minecraftWorldPath = System.getProperty("user.home") + "\\AppData\\Local\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang\\minecraftWorlds\\output";
         LOGGER.info("Copying minecraft world to " + minecraftWorldPath);
         FileUtils.deleteDirectory(new File(minecraftWorldPath));
         copyDirectory(absolutePathToResultingMinecraftWorld, minecraftWorldPath);
@@ -73,6 +77,7 @@ public class MinecraftWorldWriter {
 
     /**
      * Copies the empty minecraft world to the folder that {@link #writeSchematicToWorld(String)} uses.
+     *
      * @param templateMinecraftWorldPath template world path
      * @throws IOException if copying fails
      */
@@ -103,29 +108,43 @@ public class MinecraftWorldWriter {
 
     /**
      * Writes the schematic to the minecraft world at {@link #absolutePathToResultingMinecraftWorld}
+     *
      * @param schematicFilename path to the .schematic file
      * @throws IOException if the writing fails
      */
     public void writeSchematicToWorld(String schematicFilename) throws IOException {
-        LOGGER.debug("Thread " + Thread.currentThread().getName() + " waiting to write to minecraft world");
-        lock.lock(); //prevent multiple threads from calling this method simultaneously
-        installPythonPackages();
+        LOGGER.debug("Thread " + Thread.currentThread().getName() + " waiting to write to the minecraft world");
         try {
-            LOGGER.debug("Thread " + Thread.currentThread().getName() + " is writing to minecraft world");
-            //Calling the external python code that uses Amulet editor to import the schematic to the world
-            String command = "python python/main.py"
-                    + " " + schematicFilename
-                    + " " + absolutePathToResultingMinecraftWorld
-                    + " " + minimumXCoordinateOfAllAreas
-                    + " " + minimumYCoordinateOfAllAreas;
-            runCommandLineCommand(command);
+            //writing a maximum of x schematics in the world at once
+            //this is done because the python script would run out of memory otherwise
+            schematics.put(schematicFilename); //this call will block if the queue contains x elements
+
+            installPythonPackages();
+            try {
+                LOGGER.debug("Thread " + Thread.currentThread().getName() + " waiting to write to the minecraft world");
+                lock.lock();
+                int number = 0;
+                ArrayList<String> files = new ArrayList<>();
+                while (!schematics.isEmpty() && number++ < SCHEMATICS_AT_ONCE) {
+                    files.add(schematics.poll());
+                }
+                if (!files.isEmpty()) {
+                    LOGGER.debug("Thread " + Thread.currentThread().getName() + " is writing to the minecraft world. Schematic count:" + files.size());
+
+                    String command = "python python/main.py"
+                            + " " + String.join(",", files)
+                            + " " + absolutePathToResultingMinecraftWorld
+                            + " " + minimumXCoordinateOfAllAreas
+                            + " " + minimumYCoordinateOfAllAreas;
+                    runCommandLineCommand(command);
+                }
+            } finally {
+                lock.unlock();
+            }
+
         } catch (InterruptedException e) {
             LOGGER.error("Thread interrupted exception while writing the minecraft world!");
             throw new IOException(e);
-        } finally {
-            LOGGER.debug("Thread " + Thread.currentThread().getName() +
-                    " has finished writing to the minecraft world!");
-            lock.unlock();
         }
     }
 }

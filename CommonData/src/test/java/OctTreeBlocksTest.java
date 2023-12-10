@@ -1,19 +1,6 @@
-
 import org.junit.jupiter.api.Test;
-import org.patonki.blocks.ArrayBlocks;
-import org.patonki.blocks.OctTreeBlocks;
-import org.patonki.data.Block;
-import org.patonki.data.Classification;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class OctTreeBlocksTest {
     @Test

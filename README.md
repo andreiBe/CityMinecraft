@@ -14,7 +14,7 @@ Images:
 
 ## Running the program (TODO)
 
-java -XX:StartFlightRecording,filename=flight.jfr -ea -Xmx6g -jar Main/target/Main-1.0-SNAPSHOT-bin.jar run inputData/templates/run-options-template.json inputData/lasFiles --copy --files 23463500_6705500.laz,23464000_6705500.laz,23464500_6705500.laz,23464000_6706000.laz,23463500_6706000.laz
+java -XX:StartFlightRecording,filename=flight.jfr,maxage=1h,maxsize=200m,duration=600000s -ea -Xmx10g -jar Main/target/Main-1.0-SNAPSHOT-bin.jar run inputData/templates/run-options-template.json inputData/lasFiles --copy --log WARN --end SCHEMATIC --start GML --overwrite true
 ## Contributing
 
 Make a pull request

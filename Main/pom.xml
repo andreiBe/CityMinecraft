@@ -96,6 +96,7 @@
                                 <manifestEntries>
                                     <Specification-Vendor>patonki</Specification-Vendor>
                                     <Implementation-Vendor>patonki</Implementation-Vendor>
+                                    <Multi-Release>true</Multi-Release>
                                 </manifestEntries>
                             </archive>
                             <descriptors>

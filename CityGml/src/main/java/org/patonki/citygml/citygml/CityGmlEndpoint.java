@@ -29,10 +29,9 @@ public class CityGmlEndpoint {
 
     public void applyBuildings(Blocks blocks) throws Exception {
         CityGmlDownloader downloader = new CityGmlDownloader(this.downloadFolder);
-        BuildingCollection buildings = downloader.deserialize(blocks.getMinX(), blocks.getMinY(),
-                blocks.getMinX() + blocks.getWidth(), blocks.getMinY() + blocks.getLength(), blocks.getSideLength());
+        BuildingCollection buildings = downloader.deserialize(blocks.getMinX(), blocks.getMinY(), blocks.getSideLength());
 
-        GmlFeaturesInArea processor = new GmlFeaturesInArea();
+        GmlFeaturesInArea featureProcessor = new GmlFeaturesInArea();
 
         //The buildings produced by the las data are replaced by placeholders
         //This is done because the old buildings are removed if they are close to the new "better" city gml buildings
@@ -50,7 +49,8 @@ public class CityGmlEndpoint {
             if (block.equals(roofBlock)) return placeHolderRoofBlock;
             return block;
         });
-        processor.process(buildings, options, buildingReplacer, texturesFolder,this.multiThread);
+
+        featureProcessor.process(buildings, options, buildingReplacer, texturesFolder,this.multiThread);
         //Replacing the placeholders with the old blocks
         blocks.forEachSet((x,y,z,block) -> {
             if (block == null) return null;

@@ -10,7 +10,7 @@ import org.geotools.api.referencing.FactoryException;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.api.referencing.operation.MathTransform;
 import org.geotools.api.referencing.operation.TransformException;
-import org.geotools.data.*;
+import org.geotools.data.DefaultTransaction;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -106,7 +106,10 @@ public class FeatureFilterer {
     private void read(String shapefilePath, String exportFolderPath) throws IOException, FactoryException, TransformException {
         LOGGER.debug("Starting to read features from " + shapefilePath);
         File file = new File(shapefilePath);
-        file.setReadOnly();
+        boolean success = file.setReadOnly();
+        if (!success) {
+            LOGGER.warn("Unable to make file readonly. Probably not a problem though");
+        }
         //reading the shapefile
         FileDataStore dataStore = new ShapefileDataStore(file.toURI().toURL());
 
@@ -154,8 +157,8 @@ public class FeatureFilterer {
      */
     public void readMany(String[] shapefiles, String exportFolderPath) throws IOException, FilterException {
         File exportFolder = new File(exportFolderPath);
-        if (!exportFolder.exists()) {
-            exportFolder.mkdirs();
+        if (!exportFolder.exists() && !exportFolder.mkdirs()) {
+            LOGGER.error("Unable to create export folder at " + exportFolderPath);
         }
         for (String shapefile : shapefiles) {
             this.readSingle(shapefile, exportFolderPath);

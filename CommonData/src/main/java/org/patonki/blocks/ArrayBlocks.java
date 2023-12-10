@@ -172,6 +172,7 @@ public class ArrayBlocks extends Blocks {
                 }
                 i+=3;
             }
+            int maximum = 0;
             //the actual blocks
             for (int x = 0; x < blocks.width; x++) {
                 for (int y = 0; y < blocks.length; y++) {
@@ -179,6 +180,7 @@ public class ArrayBlocks extends Blocks {
                         int index = blocks.pos(x,y,z);
                         index += i;
                         byte block = ar[index];
+                        maximum = Math.max(maximum, block);
                         blocks.blocks[blocks.pos(x,y,z)] = block;
 
                         Block b = blocks.pallet[block];
@@ -186,6 +188,11 @@ public class ArrayBlocks extends Blocks {
                             blocks.ids.put(b, block);
                     }
                 }
+            }
+            //hack to fill up the ids array
+            int data = 30;
+            while (blocks.ids.size() < maximum) {
+                blocks.ids.put(new Block(30, data++, Classification.UNKNOWN), (byte) 1);
             }
             return blocks;
         }

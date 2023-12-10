@@ -2,11 +2,7 @@ package org.patonki.citygml.parser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.patonki.citygml.features.*;
-import org.patonki.citygml.math.Point2D;
-import org.xmlobjects.gml.model.geometry.AbstractGeometry;
 import org.citygml4j.core.model.appearance.*;
-import org.citygml4j.core.model.appearance.Color;
 import org.citygml4j.core.model.building.Building;
 import org.citygml4j.core.model.construction.AbstractConstructionSurface;
 import org.citygml4j.core.model.construction.RoofSurface;
@@ -19,6 +15,9 @@ import org.citygml4j.xml.CityGMLContextException;
 import org.citygml4j.xml.reader.CityGMLInputFactory;
 import org.citygml4j.xml.reader.CityGMLReadException;
 import org.citygml4j.xml.reader.CityGMLReader;
+import org.patonki.citygml.features.*;
+import org.patonki.citygml.math.Point2D;
+import org.xmlobjects.gml.model.geometry.AbstractGeometry;
 import org.xmlobjects.gml.model.geometry.GeometricPosition;
 import org.xmlobjects.gml.model.geometry.aggregates.MultiSurface;
 import org.xmlobjects.gml.model.geometry.primitives.AbstractRing;
@@ -165,7 +164,7 @@ public class CityGmlParser {
 
                 if (imagePath.isEmpty()) {
                     //default
-                    textureMap.put(id, new Material(255,255,255));
+                    textureMap.put(id, new Material(1,1,1));
                 } else {
                     textureMap.put(id, new ImgTexture(imagePath.get(), coordinates));
                 }

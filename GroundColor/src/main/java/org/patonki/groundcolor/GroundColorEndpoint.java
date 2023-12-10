@@ -1,14 +1,16 @@
 package org.patonki.groundcolor;
 
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.patonki.blocks.Blocks;
 import org.patonki.blocks.GroundLayer;
 import org.patonki.blocks.XYZBlock;
-import org.patonki.color.*;
+import org.patonki.color.Color;
+import org.patonki.color.ColorBlockConverterFactory;
+import org.patonki.color.IColorToBlockConverter;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 import org.patonki.util.ImageUtil;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.List;
@@ -51,7 +53,8 @@ public class GroundColorEndpoint {
         GroundLayer ground = blocks.getGroundLayer();
         for (int x = 0; x < ground.getWidth(); x++) {
             for (int y = 0; y < ground.getLength(); y++) {
-                int c = colors[colors.length - 1 - y][x];
+                int index = Math.max(0, colors.length - 1 - y);
+                int c = colors[index][x];
                 Color color = Color.fromInt(c);
                 Block block = getBlock(colorConverter, color);
                 for (int z = ground.getHeightAt(x,y); z >= 0; z--) {

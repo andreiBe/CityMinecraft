@@ -1,6 +1,8 @@
 package org.patonki.serialize;
 
 import com.google.gson.Gson;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.patonki.citygml.citygml.GmlOptions;
 import org.patonki.color.ColorToBlockConverterOptions;
 import org.patonki.data.Block;
@@ -9,16 +11,14 @@ import org.patonki.data.Classification;
 import org.patonki.data.IntBoundingBox;
 import org.patonki.downloader.Downloader;
 import org.patonki.groundcolor.GroundColorSettings;
+import org.patonki.las.settings.LasReaderSettings;
 import org.patonki.openstreetmap.FeatureFilterer;
 import org.patonki.openstreetmap.settings.LandUseInfo;
 import org.patonki.openstreetmap.settings.OpenStreetMapSettings;
 import org.patonki.openstreetmap.settings.RoadInfo;
 import org.patonki.openstreetmap.settings.WaterwayInfo;
-import org.patonki.las.settings.LasReaderSettings;
-import org.patonki.types.LandUseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.patonki.settings.Settings;
+import org.patonki.types.LandUseType;
 import org.patonki.types.RoadType;
 import org.patonki.types.WaterWayType;
 
@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -53,13 +54,16 @@ public class JsonSerializer {
         StringBuilder res = new StringBuilder();
         InputStream stream = JsonSerializer.class.getResourceAsStream(path);
 
-        record Block(String group, String name, int id, int data, String textureName) {
-        }
+        record Block(String group, String name, int id, int data, String textureName) { }
         ArrayList<Block> blocks = new ArrayList<>();
 
+        if (stream == null) {
+            LOGGER.error("Unable to read path " + path + ". Does the file exist?");
+            return;
+        }
         try (Scanner scanner = new Scanner(stream)) {
             String group = null;
-            double groupWeight = 0;
+            double groupWeight;
             while (scanner.hasNextLine()) {
                 String lineStr = scanner.nextLine();
                 if (lineStr.isBlank()) continue;
@@ -234,7 +238,7 @@ public class JsonSerializer {
                 new BlockEntry(built, "cobblestone", 1, 5, "cobblestone"),
                 new BlockEntry(built, "smooth_stone", 1, 5, "stone_slab_top"),
         };
-        return new ColorToBlockConverterOptions(entries);
+        return new ColorToBlockConverterOptions(Arrays.stream(entries).toList());
     }
 
     private static ColorToBlockConverterOptions blackAndWhiteColorOptions() {
@@ -257,7 +261,7 @@ public class JsonSerializer {
                 new BlockEntry(black, "coal_block", 173, 0, "coal_block"),
                 new BlockEntry(black, "black_concrete", 251, 15, "concrete_black"),
         };
-        return new ColorToBlockConverterOptions(blackAndWhiteEntries);
+        return new ColorToBlockConverterOptions(Arrays.stream(blackAndWhiteEntries).toList());
     }
 
     private static ColorToBlockConverterOptions colorOptions() {
@@ -341,7 +345,7 @@ public class JsonSerializer {
                 new BlockEntry(red, "terracotta", 172, 0, "hardened_clay"),
                 new BlockEntry(red, "red_concrete", 251, 14, "concrete_red"),
         };
-        return new ColorToBlockConverterOptions(entries);
+        return new ColorToBlockConverterOptions(Arrays.stream(entries).toList());
     }
 
     private static void downloadOptions(String templateFolder) {
@@ -372,7 +376,7 @@ public class JsonSerializer {
         Downloader.GmlDownloadSettings gml = new Downloader.GmlDownloadSettings(gmlUrl, "3.1.1", 500,
                 new IntBoundingBox[] {
                         new IntBoundingBox(23449500, 6692000, 23466000, 6713000),
-                        new IntBoundingBox(23460000,6713500, 	23469000,6723000),
+                        new IntBoundingBox(23460000,6713500, 	23469500,6723000),
                         new IntBoundingBox(	23465500,6723500, 	23470000,6736500)
                 });
         //https://docs.geoserver.org/2.23.x/en/user/services/wms/reference.html
@@ -390,7 +394,7 @@ public class JsonSerializer {
             aerialUrl, 500,
                 new IntBoundingBox[] {
                         new IntBoundingBox(23449500, 6692000, 23466000, 6713000),
-                        new IntBoundingBox(23460000,6713500, 	23469000,6723000),
+                        new IntBoundingBox(23460000,6713500, 	23469500,6723000),
                         new IntBoundingBox(	23465500,6723500, 	23470000,6736500)
                 }
         );
@@ -401,7 +405,10 @@ public class JsonSerializer {
     }
 
     public static void createTemplates(String templateFolder) {
-        new File(templateFolder).mkdirs();
+        File folder = new File(templateFolder);
+        if (!folder.exists() && !folder.mkdirs()) {
+            LOGGER.error("Creating templates folder failed: " + templateFolder);
+        }
         runOptions(templateFolder);
         downloadOptions(templateFolder);
     }

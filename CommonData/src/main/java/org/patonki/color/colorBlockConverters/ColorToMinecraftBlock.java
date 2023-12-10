@@ -3,7 +3,6 @@ package org.patonki.color.colorBlockConverters;
 
 import org.patonki.color.Color;
 import org.patonki.color.ColorToBlockConverterOptions;
-import org.patonki.color.colorBlockConverters.ColorBlockConverter;
 import org.patonki.data.Block;
 import org.patonki.data.Classification;
 import org.patonki.util.Pair;

@@ -16,6 +16,7 @@ import java.util.*;
 public class WorldDecorator {
     private static final Logger LOGGER = LogManager.getLogger(WorldDecorator.class);
 
+    private static final int MIN_TREE_HEIGHT = 6;
     /**
      * Adds finishing touches to the blocks
      * @param blocks blocks
@@ -39,44 +40,6 @@ public class WorldDecorator {
         }
     }
 
-    private static abstract class TreePointTree extends TreePoint {
-        public TreePointTree(int x, int y, int z) {
-            super(x, y, z);
-        }
-        public TreePointTree(TreePoint p) {
-            this(p.x, p.y, p.z);
-        }
-        public abstract boolean contains(TreePoint p);
-    }
-    private static class EvergreenTree extends TreePointTree {
-        protected final double a,b,c;
-        public EvergreenTree(TreePoint p, double a, double b, double c) {
-            super(p);
-            this.a = a;
-            this.b = b;
-            this.c = c;
-        }
-
-        @Override
-        public boolean contains(TreePoint p) {
-            double xyDist = p.XYDistance(this);
-            double zDist = p.ZDistance(this);
-            return this.a * Math.pow(zDist, this.b) + this.c > xyDist;
-        }
-    }
-    private static class RadiusTree extends TreePointTree {
-        private final int radius;
-        public RadiusTree(TreePoint p, int radius) {
-            super(p);
-            this.radius = radius;
-        }
-
-        @Override
-        public boolean contains(TreePoint p) {
-            return this.XYDistance(p) <= radius;
-        }
-    }
-
     private static class TreePoint {
         private final int x,y,z;
         private boolean partOfTree;
@@ -90,33 +53,32 @@ public class WorldDecorator {
         public double XYDistance(TreePoint tree) {
             return Math.sqrt((x-tree.x) * (x-tree.x) + (y - tree.y) * (y - tree.y));
         }
-
-        public double ZDistance(TreePoint tree) {
-            return Math.abs(z - tree.z);
-        }
     }
 
     private void treeTrunks(Blocks blocks, Block logBlock) {
         GroundLayer groundLayer = blocks.getGroundLayer();
-        ArrayList<TreePointTree> treeTops = treeTops(groundLayer, blocks, 0.4, 0.75, 4.6, 6);
+        ArrayList<TreePoint> treeTops = treeTops(groundLayer, blocks);
         for (TreePoint treeTop : treeTops) {
             int x = treeTop.x;
             int y = treeTop.y;
-            int startZ = groundLayer.getHeightAt(x,y)+1;
+            XYZBlock groundBlock = groundLayer.getXYZBlock(x,y);
+            if (groundBlock.block().classification() == Classification.WATER) continue;
+            int startZ = groundBlock.z()+1;
             int endZ = treeTop.z - 1;
             boolean insideTree = false;
 
             for (int z = startZ; z <= endZ; z++) {
-                long count = blocks.xyNeighborsList(x, y, z).stream().filter(i -> i.block().classification().isPlant()).count();
-                if (insideTree && count < 3) {
+                long plantNeighborCount = blocks.xyNeighborsList(x, y, z).stream().filter(i -> i.block().classification().isPlant()).count();
+                //the trunk of the tree must end before the top of the tree while it's surrounded by leaves
+                if (insideTree && plantNeighborCount < 3) {
                     break;
                 }
                 blocks.set(x,y,z, logBlock);
-                if (count >= 3) insideTree = true;
+                if (plantNeighborCount >= 3) insideTree = true;
             }
         }
     }
-    private void addIfValid(Queue<TreePoint> rec, TreePoint p, int x, int y, TreePoint[][] treePointTop, int[][] visited, int maxDown, HashSet<Integer> added) {
+    private void addIfValid(Queue<TreePoint> rec, TreePoint p, int x, int y, TreePoint[][] treePointTop, int[][] visited, int maxDown) {
         if (x < 0 || y < 0 || x >= treePointTop.length || y>= treePointTop[0].length)
             return;
         TreePoint p2 = treePointTop[x][y];
@@ -135,7 +97,7 @@ public class WorldDecorator {
             return list.stream().min((o1, o2) -> (int) (o1.XYDistance(center) - o2.XYDistance(center))).orElse(null);
         }
     }
-    private TreeExtend extentOfTree(TreePoint centerOfTree, int[][] visited, int i, TreePoint[][] treePointTop, int maxDown, HashSet<Integer> added) {
+    private TreeExtend extentOfTree(TreePoint centerOfTree, int[][] visited, int i, TreePoint[][] treePointTop, int maxDown) {
         ArrayList<TreePoint> ret = new ArrayList<>();
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
@@ -156,39 +118,14 @@ public class WorldDecorator {
             if (visited[x][y] == i) continue;
             visited[x][y] = i;
             ret.add(point);
-            addIfValid(rec, point, x-1, y, treePointTop, visited, maxDown, added);
-            addIfValid(rec, point, x+1, y, treePointTop,  visited, maxDown, added);
-            addIfValid(rec, point, x, y-1, treePointTop,  visited, maxDown, added);
-            addIfValid(rec, point, x, y+1, treePointTop,  visited, maxDown, added);
+            addIfValid(rec, point, x-1, y, treePointTop, visited, maxDown);
+            addIfValid(rec, point, x+1, y, treePointTop,  visited, maxDown);
+            addIfValid(rec, point, x, y-1, treePointTop,  visited, maxDown);
+            addIfValid(rec, point, x, y+1, treePointTop,  visited, maxDown);
         }
         return new TreeExtend(minX,minY,maxX,maxY,ret);
     }
-    private HashMap<Integer, Integer> seen = new HashMap<>();
-    private void printSituation(TreePoint p, TreePoint center, TreePoint[][] treePointTop, int[][] visited, boolean before) {
-        seen.put(Integer.MAX_VALUE, 10000);
-        seen.put(0, 0);
-        System.out.println("Situation: " + before);
-        int radius = 10;
-        for (int y = p.y - radius; y <= p.y + radius; y++) {
-            for (int x = p.x - radius; x <= p.x + radius; x++) {
-                if (x < 0 || y < 0 || x >= treePointTop.length || y >= treePointTop[0].length) continue;
-                String numberStr = treePointTop[x][y] != null ? treePointTop[x][y].z + "" : "-";
-                int visit = visited[x][y];
-                if (!seen.containsKey(visit)) {
-                    seen.put(visit, seen.size()-1);
-                }
-                visit = seen.get(visit);
-                numberStr += ":"+ (visit == 10000 ? 'o' : visit+"");
-                if (x == p.x && y == p.y) numberStr = "*" + numberStr;
-                if (center != null && x == center.x && y == center.y) numberStr = "c"+numberStr;
-
-                System.out.print(numberStr + new String(new char[8-numberStr.length()]).replace("\0", " "));
-            }
-            System.out.println();
-        }
-    }
-
-    private ArrayList<TreePointTree> treeTops(GroundLayer groundLayer, Blocks blocks, double a, double b, double c, double minZ) {
+    private ArrayList<TreePoint> treeTops(GroundLayer groundLayer, Blocks blocks) {
         ArrayList<TreePoint> treePoints = new ArrayList<>();
         TreePoint[][] treePointTop = new TreePoint[blocks.getWidth()][blocks.getLength()];
         int[][] visited = new int[blocks.getWidth()][blocks.getLength()];
@@ -204,35 +141,35 @@ public class WorldDecorator {
             treePoints.add(treePoint);
         }
         if (treePoints.size() == 0) return new ArrayList<>();
-        //sorting based on height
+        //processing the points of the trees from highest to lowest
+        //because the tree trunk is probably where the highest point of the tree is
         treePoints.sort(Comparator.comparingInt(o -> o.z));
 
-        ArrayList<TreePointTree> treeCenters = new ArrayList<>();
+        ArrayList<TreePoint> treeCenters = new ArrayList<>();
 
         TreePoint highestPoint = treePoints.get(treePoints.size() - 1);
-        treeCenters.add(new EvergreenTree(highestPoint, a,b,c));
+        treeCenters.add(highestPoint);
 
         LOGGER.debug("Tree points: " + treePoints.size());
-        HashSet<Integer> added = new HashSet<>();
         for (int i = treePoints.size()-1; i >= 0; i--) {
             TreePoint p = treePoints.get(i);
 
             int groundHeight = groundLayer.getHeightAt(p.x,p.y);
             //ignore the point, if it's a part of tree already
-            if (p.partOfTree || p.z - groundHeight < minZ) {
+            if (p.partOfTree || p.z - groundHeight < MIN_TREE_HEIGHT) {
                 continue;
             }
             if (visited[p.x][p.y] != 0) {
                 continue;
             }
 
-            TreeExtend treeTopExtend = extentOfTree(p, visited, i, treePointTop, 0, added);
+            TreeExtend treeTopExtend = extentOfTree(p, visited, i, treePointTop, 0);
             TreePoint centerOfTree = treeTopExtend.mostCenterPoint();
             if (centerOfTree == null) {
                 throw new NullPointerException("Should not happen!");
             }
 
-            TreeExtend extentOfTree = extentOfTree(centerOfTree, visited, -i, treePointTop, 3, added);
+            TreeExtend extentOfTree = extentOfTree(centerOfTree, visited, -i, treePointTop, 3);
             double minDistance = extentOfTree.maxX - centerOfTree.x;
             minDistance = Math.min(minDistance, extentOfTree.maxY-centerOfTree.y);
             minDistance = Math.min(minDistance, centerOfTree.x - extentOfTree.minX);
@@ -268,10 +205,9 @@ public class WorldDecorator {
                 visited[treePoint.x][treePoint.y] = Integer.MAX_VALUE;
             }
 
-            treeCenters.add(new RadiusTree(centerOfTree, mDistance));
-            added.add(-i);
+            treeCenters.add(centerOfTree);
         }
-        System.out.println("Treetops : " + treeCenters.size());
+        LOGGER.info("Tree tops: " + treeCenters.size());
         return treeCenters;
     }
     private void addGrassCover(Blocks blocks) {
