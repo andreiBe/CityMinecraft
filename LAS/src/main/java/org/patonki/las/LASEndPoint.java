@@ -32,7 +32,6 @@ public class LASEndPoint {
         this.fixer = new BlockDataFixer(
                 settings.mapToBlock(Classification.BUILDING),
                 settings.mapToBlock(Classification.WATER),
-                settings.mapToBlock(Classification.GROUND),
                 settings.mapToBlock(Classification.UNKNOWN),
                 settings.getRoofBlock());
         this.converter = new LasDataToBlocks(settings::mapToBlock);
