@@ -117,7 +117,7 @@ public class MinecraftWorldWriter {
         try {
             //writing a maximum of x schematics in the world at once
             //this is done because the python script would run out of memory otherwise
-            schematics.put(schematicFilename); //this call will block if the queue contains x elements
+            schematics.put(schematicFilename); //this call will block if the queue is full
 
             installPythonPackages();
             try {
