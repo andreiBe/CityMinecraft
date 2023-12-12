@@ -10,6 +10,8 @@ import org.patonki.settings.Settings;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class Main {
@@ -91,7 +93,7 @@ public class Main {
     }
     private record CommandLineArgs(ExecutionStep start, ExecutionStep end, ExecutionStep[] skipped,
                                    ExecutionStep[] cached, boolean copyToMinecraft, String[] lasFiles, Level logLevel, boolean overwrite, boolean deleteOld){}
-    private static CommandLineArgs readCommandLineArguments(String[] args) {
+    private static CommandLineArgs readCommandLineArguments(String[] args) throws IOException {
         ExecutionStep start = ExecutionStep.BEGINNING;
         ExecutionStep end = ExecutionStep.END;
         ExecutionStep[] skipped = new ExecutionStep[0];
@@ -129,7 +131,11 @@ public class Main {
                 case "--copy" -> copyToMinecraftWorld = true;
                 case "--files" -> {
                     String nextArg = args[i+1];
-                    lasFiles = nextArg.split(",");
+                    if (nextArg.endsWith(".txt")) {
+                        lasFiles = Files.readString(Paths.get(nextArg)).split(",");
+                    } else {
+                        lasFiles = nextArg.split(",");
+                    }
                     i++;
                 }
                 case "--log" -> {
@@ -166,7 +172,7 @@ public class Main {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
-            builder.append(file.getName()).append(".laz");
+            builder.append(file.getName());
             if (i != files.length - 1) builder.append(",");
         }
         System.out.println(builder);
