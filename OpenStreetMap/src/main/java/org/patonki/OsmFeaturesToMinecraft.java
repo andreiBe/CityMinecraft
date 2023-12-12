@@ -95,26 +95,49 @@ public class OsmFeaturesToMinecraft {
     }
     private void fillWater(int xo, int yo, GroundLayer groundLayer, Block waterBlock) {
         int radius = 5;
+
         int minZ = Integer.MAX_VALUE;
+        int minZ2 = Integer.MAX_VALUE; // the next smallest height
         ArrayList<XYZBlock> bottomLayer = new ArrayList<>();
+        ArrayList<XYZBlock> bottomLayer2 = new ArrayList<>();
 
         for (int x = xo-radius; x <= xo+radius; x++) {
             for (int y = yo-radius; y <= yo+radius; y++) {
                 if (!groundLayer.inRange(x,y)) continue;
                 XYZBlock i = groundLayer.getXYZBlock(x,y);
+
                 if (i.z() < minZ) {
+                    minZ2 = minZ;
                     minZ = i.z();
                     if (i.block().classification() == Classification.WATER) minZ--;
+
+                    bottomLayer2.clear();
+                    bottomLayer2.addAll(bottomLayer);
                     bottomLayer.clear();
-                }
-                if (i.z() == minZ) {
                     bottomLayer.add(i);
+                }
+                else if (i.z() < minZ2) {
+                    minZ2 = i.z();
+                    if (i.block().classification() == Classification.WATER) minZ--;
+                    bottomLayer2.clear();
+                    bottomLayer2.add(i);
+                }
+                else if (i.z() == minZ) {
+                    bottomLayer.add(i);
+                }
+                else if (i.z() == minZ2) {
+                    bottomLayer2.add(i);
                 }
             }
         }
-
         for (XYZBlock XYZBlock : bottomLayer) {
             blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, waterBlock);
+        }
+        //also the second layer
+        if (bottomLayer2.size() > bottomLayer.size()) {
+            for (XYZBlock XYZBlock : bottomLayer2) {
+                blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, waterBlock);
+            }
         }
     }
     private void applyRoads() {

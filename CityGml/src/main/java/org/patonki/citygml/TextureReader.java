@@ -133,7 +133,7 @@ public class TextureReader {
     }
 
     private Block[][] createDefault(int w, int h, IColorToBlockConverter converter) {
-        return createDefault(w, h, new Color(255, 255, 255), converter);
+        return createDefault(w, h, Color.WHITE, converter);
     }
 
     private Block[][] createDefault(int w, int h, Color color, IColorToBlockConverter converter) {

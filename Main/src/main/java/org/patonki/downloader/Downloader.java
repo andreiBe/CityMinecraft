@@ -36,21 +36,21 @@ public class Downloader {
     public record DownloadSettings(LasDownloadSettings lasSettings, AerialDownloadSettings aerialSettings,
                                    OsmDownloadSettings osmSettings, GmlDownloadSettings gmlSettings) {
     }
-    public void download(boolean las, boolean osm, boolean gml, boolean aerial, boolean overrideParsed,
+    public void download(boolean las, boolean osm, boolean gml, boolean aerial, boolean overrideParsed, boolean replace,
                          String lasDownloadFolder, String aerialDownloadFolder, String osmDownloadFolder, String gmlDownloadFolder,
                          String texturePackFolder, String minecraftWorldFolder,
                          String[] unfilteredShapefileLocations, String filteredInputDataPath) {
         if (osm) {
-            downloadOsmData(settings.osmSettings(), osmDownloadFolder, unfilteredShapefileLocations, filteredInputDataPath);
+            downloadOsmData(settings.osmSettings(), osmDownloadFolder, unfilteredShapefileLocations, filteredInputDataPath, replace);
         }
         if (las) {
-            downloadLasData(settings.lasSettings(), lasDownloadFolder);
+            downloadLasData(settings.lasSettings(), lasDownloadFolder, replace);
         }
         if (aerial) {
-            downloadAerialData(settings.aerialSettings(), aerialDownloadFolder);
+            downloadAerialData(settings.aerialSettings(), aerialDownloadFolder, replace);
         }
         if (gml) {
-            downloadGmlData(settings.gmlSettings(), gmlDownloadFolder, texturePackFolder, overrideParsed);
+            downloadGmlData(settings.gmlSettings(), gmlDownloadFolder, texturePackFolder, overrideParsed,replace);
         }
         checkTemplateWorldExists(minecraftWorldFolder);
     }
@@ -110,7 +110,7 @@ public class Downloader {
             LOGGER.error("Unable to create aerial download folder at " + folder.getPath());
         }
     }
-    private void downloadAerialData(AerialDownloadSettings settings, String aerialDownloadFolder) {
+    private void downloadAerialData(AerialDownloadSettings settings, String aerialDownloadFolder, boolean replace) {
         createFolder(aerialDownloadFolder);
 
         downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
@@ -124,7 +124,7 @@ public class Downloader {
                     .replace("$WIDTH", settings.stepMeter()+"")
                     .replace("$HEIGHT", settings.stepMeter()+"");
 
-            if (new File(outputPath).exists()) {
+            if (new File(outputPath).exists() && !replace) {
                 LOGGER.info("Aerial image downloaded from " + url + " already exists!");
                 return;
             }
@@ -132,14 +132,14 @@ public class Downloader {
             downloadFileFromInternet(url, outputPath);
         });
     }
-    private void downloadLasData(LasDownloadSettings settings, String lasDownloadFolder) {
+    private void downloadLasData(LasDownloadSettings settings, String lasDownloadFolder, boolean replace) {
         createFolder(lasDownloadFolder);
         downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
             String downloadFilePath = settings.lasDataPath() + "/" + settings.lasFormat()
                     .replace("$X", x + "")
                     .replace("$Y", y + "");
             String resultPath = lasDownloadFolder + "/" + x + "_" + y + ".laz";
-            if (new File(resultPath).exists()) {
+            if (new File(resultPath).exists() && !replace) {
                 LOGGER.info("Las file downloaded from " + downloadFilePath + " already exists!");
                 return;
             }
@@ -176,7 +176,7 @@ public class Downloader {
             LOGGER.error(e);
         }
     }
-    private void downloadGmlData(GmlDownloadSettings settings, String gmlDownloadFolder, String texturesFolder, boolean overrideParsed) {
+    private void downloadGmlData(GmlDownloadSettings settings, String gmlDownloadFolder, String texturesFolder, boolean overrideParsed, boolean replace) {
         File minecraftTexturePackFolder = new File(texturesFolder);
         createFolder(texturesFolder);
         if (Objects.requireNonNull(minecraftTexturePackFolder.list()).length == 0) {
@@ -187,7 +187,8 @@ public class Downloader {
         downloadAreas(settings.boxes(), settings.stepMeter(), (x, y) -> {
             LOGGER.info("Downloading gml area " + x + "," + y + " to " +(x + settings.stepMeter()) + "," + (y + settings.stepMeter()));
             try {
-                downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter, settings.gmlDataPath(), settings.gmlVersion(), overrideParsed);
+                downloader.downloadAndParseGml(x, y, x+settings.stepMeter, y+settings.stepMeter,
+                        settings.gmlDataPath(), settings.gmlVersion(), overrideParsed, replace);
             } catch (IOException e) {
                 LOGGER.error("Error while downloading CityGml buildings");
                 LOGGER.error("Error downloading gml area " + x + " " + y, e);
@@ -230,8 +231,8 @@ public class Downloader {
             e.printStackTrace();
         }
     }
-    private void downloadOsmData(OsmDownloadSettings settings, String osmDownloadFolder, String[] unfilteredShapeFileLocations, String filteredInputFolder) {
-        if (new File(osmDownloadFolder).exists()) {
+    private void downloadOsmData(OsmDownloadSettings settings, String osmDownloadFolder, String[] unfilteredShapeFileLocations, String filteredInputFolder, boolean replace) {
+        if (new File(osmDownloadFolder).exists() && !replace) {
             LOGGER.warn("OpenStreetMap data has already been installed. If you want to reinstall, delete the folder: " + osmDownloadFolder);
         } else {
             LOGGER.info("Downloading zip from " + settings.osmDataPath + " to " + osmDownloadFolder + ". Might take some time");
@@ -248,7 +249,7 @@ public class Downloader {
                 break;
             }
         }
-        if (allFilesExist) {
+        if (allFilesExist && !replace) {
             LOGGER.warn("The OpenStreetMap data has already been filtered.");
         } else {
             FeatureFilterer featureFilterer = new FeatureFilterer(settings.filterOptions());

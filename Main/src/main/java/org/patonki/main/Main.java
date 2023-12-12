@@ -147,10 +147,29 @@ public class Main {
                     deleteOld = Boolean.parseBoolean(nextArg);
                     i++;
                 }
-                default -> LOGGER.warn("Unknown cmd argument: " + arg);
+                default -> throw new IllegalArgumentException("Unknown cmd argument: " + arg);
             }
         }
         return new CommandLineArgs(start, end, skipped,cached, copyToMinecraftWorld, lasFiles, logLevel, overwrite, deleteOld);
+    }
+    private static void deleteCache(String[] args) {
+        ExecutionStep[] steps = Arrays.stream(args[0].split(",")).map(ExecutionStep::valueOf).toArray(ExecutionStep[]::new);
+        WorldBuilder.deleteCache(steps, CACHE_FILE_LOCATION);
+    }
+    private static void lasFiles() {
+        File lasFileLocation = new File(LAS_FILE_DOWNLOAD_LOCATION);
+        File[] files = lasFileLocation.listFiles();
+        if (files == null) {
+            System.out.println("Unable to list files");
+            return;
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < files.length; i++) {
+            File file = files[i];
+            builder.append(file.getName()).append(".laz");
+            if (i != files.length - 1) builder.append(",");
+        }
+        System.out.println(builder);
     }
     private static void download(String[] args) throws IOException {
         LOGGER.debug("Downloading");
@@ -164,6 +183,7 @@ public class Main {
         boolean downloadGml = false;
         boolean downloadAerial = false;
         boolean overrideParsed = true;
+        boolean replace = false;
         for (String arg : args) {
             switch (arg) {
                 case "-las" -> downloadLaz = true;
@@ -172,11 +192,13 @@ public class Main {
                 case "-aerial" -> downloadAerial = true;
                 case "-noparse" -> overrideParsed = false;
                 case "-nolog" -> setLogLevel(Level.WARN);
+                case "-replace" -> replace = true;
+                default -> throw new IllegalArgumentException("Unknown command line argument " + arg);
             }
         }
         Downloader.DownloadSettings settings = JsonSerializer.deserializeFromFile(options, Downloader.DownloadSettings.class);
         Downloader downloader = new Downloader(settings);
-        downloader.download(downloadLaz,downloadOsm,downloadGml,downloadAerial,overrideParsed,
+        downloader.download(downloadLaz,downloadOsm,downloadGml,downloadAerial,overrideParsed,replace,
                 LAS_FILE_DOWNLOAD_LOCATION, AERIAL_FILE_DOWNLOAD_LOCATION, SHAPE_FILE_DOWNLOAD_LOCATION,GML_DOWNLOAD_FOLDER, TEXTURE_PACK_DOWNLOAD_FOLDER, TEMPLATE_MINECRAFT_WORLD,
                 UNFILTERED_SHAPEFILE_LOCATIONS, FILTERED_INPUT_DATA_FOLDER);
     }
@@ -192,7 +214,7 @@ public class Main {
         init();
         if (args.length == 0) {
             System.out.println("""
-                    Please see github repo for instructions on command line arguments
+                    Please see github repo for instructions on command line arguments https://github.com/andreiBe/CityMinecraft
                     """);
             return;
         }
@@ -202,6 +224,10 @@ public class Main {
             case "download" -> download(remainingArgs);
             case "run" -> runAll(remainingArgs);
             case "createTemplates" -> createTemplates();
+            case "deleteCache" -> deleteCache(remainingArgs);
+            case "lasfiles" -> lasFiles();
         }
     }
+
+
 }

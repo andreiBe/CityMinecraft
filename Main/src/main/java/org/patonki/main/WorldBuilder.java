@@ -72,6 +72,18 @@ public class WorldBuilder {
                 ? new OctTreeBlocks.OctTreeBlocksSerializer()
                 : new ArrayBlocks.ArrayBlockSerializer();
     }
+
+    public static void deleteCache(ExecutionStep[] steps, String cacheFolderPath) {
+        File cacheFolder = new File(cacheFolderPath);
+        File[] files = cacheFolder.listFiles();
+        if (files == null) {
+            throw new IllegalArgumentException("Could not list files in folder " + cacheFolder);
+        }
+        for (File file : files) {
+            Executor.deleteCache(file.getName()+".laz", cacheFolderPath, steps);
+        }
+    }
+
     private record MinCoordinates(int x, int y) {}
 
     public static class LasFileFormatException extends Exception{

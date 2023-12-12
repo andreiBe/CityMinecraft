@@ -42,7 +42,7 @@ public class CityGmlDownloader {
     private String getPathToDownloadedGmlFile(int minX, int minY, int maxX, int maxY) {
         return getAreaDownloadFolder(minX, minY, maxX, maxY) +"/" + minX+" " + minY + " " + maxX + " " + maxY+".gml";
     }
-    private void downloadFileFromWFSServer(int minX, int minY, int maxX, int maxY, String downloadUrl, String gmlVersion) throws IOException {
+    private void downloadFileFromWFSServer(int minX, int minY, int maxX, int maxY, String downloadUrl, String gmlVersion, boolean replace) throws IOException {
         String outputPath = getPathToDownloadedGmlFile(minX, minY, maxX, maxY);
         File output = new File(outputPath);
         File parent = output.getParentFile();
@@ -57,7 +57,7 @@ public class CityGmlDownloader {
                 .replace("$YMAX", maxY+"");
 
         //no need to download the same file multiple times
-        if (output.exists()) {
+        if (!replace && output.exists()) {
             LOGGER.info("Not downloading file " + outputPath + " because it already exist. From url: " + url);
             return;
         }
@@ -125,8 +125,8 @@ public class CityGmlDownloader {
         JsonReader jsonReader = new JsonReader(new FileReader(filtered));
         return this.buildingSerializer.fromJson(jsonReader, BuildingCollection.class);
     }
-    public void downloadAndParseGml(int minX, int minY, int maxX, int maxY, String url, String gmlVersion, boolean overrideParsed) throws IOException {
-        downloadFileFromWFSServer(minX, minY, maxX, maxY, url, gmlVersion);
+    public void downloadAndParseGml(int minX, int minY, int maxX, int maxY, String url, String gmlVersion, boolean overrideParsed, boolean replace) throws IOException {
+        downloadFileFromWFSServer(minX, minY, maxX, maxY, url, gmlVersion, replace);
         CityGmlParser parser = new CityGmlParser(getImgDownloadFolder(minX, minY, maxX, maxY));
 
         try {

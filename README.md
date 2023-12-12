@@ -50,6 +50,7 @@ Optional command line arguments (inserted at the end of the above command separa
 - -gml &rarr; download the cityGml building models
 - -aerial &rarr; downloads the aerial images
 - -nolog &rarr; only log warnings and errors
+- -replace &rarr; download everything again even if it already has been downloaded
 
 Example:
 ```

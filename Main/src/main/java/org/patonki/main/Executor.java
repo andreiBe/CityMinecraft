@@ -47,13 +47,26 @@ public class Executor {
             LOGGER.warn("Unable to delete old cache!");
         }
     }
-    private File getCacheFile(String lazFile, ExecutionStep step) {
+
+    public static void deleteCache(String lazFile, String cacheFolderPath, ExecutionStep[] steps) {
+        for (ExecutionStep step : steps) {
+            File file = getCacheFile(cacheFolderPath, lazFile, step);
+            if (file.exists() && !file.delete()) {
+                LOGGER.warn("Unable to delete file " + file.getPath());
+            }
+        }
+    }
+
+    private static File getCacheFile(String cacheFolderPath, String lazFile, ExecutionStep step) {
         String withoutExtension = lazFile.substring(0, lazFile.lastIndexOf('.'));
-        File parentFolder = new File(this.cacheFolderPath+"/"+withoutExtension);
+        File parentFolder = new File(cacheFolderPath+"/"+withoutExtension);
         if (!parentFolder.exists() && !parentFolder.mkdirs()) {
             LOGGER.warn("Unable to create cache folder");
         }
-        return new File(this.cacheFolderPath + "/"+withoutExtension+"/"+ step.name()+".dat");
+        return new File(cacheFolderPath + "/"+withoutExtension+"/"+ step.name()+".dat");
+    }
+    private File getCacheFile(String lazFile, ExecutionStep step) {
+        return getCacheFile(this.cacheFolderPath, lazFile, step);
     }
     private Blocks getCachedBlocks(String lazFile, ExecutionStep step) throws IOException {
         File file = getCacheFile(lazFile, step);
