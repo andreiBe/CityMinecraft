@@ -23,7 +23,6 @@ public class OsmFeaturesToMinecraft {
     private final ArrayList<Road> roads;
     private final ArrayList<Waterway> waterways;
 
-
     private static final Logger LOGGER = LogManager.getLogger(OsmFeaturesToMinecraft.class);
 
     public OsmFeaturesToMinecraft(ArrayList<LandUse> lands, ArrayList<Road> roads, ArrayList<Waterway> waterways) {
@@ -37,11 +36,12 @@ public class OsmFeaturesToMinecraft {
         if (applyLandUse) {
             this.applyLandUse();
         }
+        boolean[][] roadPlacements = new boolean[blocks.getWidth()][blocks.getLength()];
         if (applyRoads) {
-            this.applyRoads();
+            this.applyRoads(roadPlacements);
         }
         if (applyWaterWays) {
-            this.applyWaterWays();
+            this.applyWaterWays(roadPlacements);
         }
     }
 
@@ -78,7 +78,7 @@ public class OsmFeaturesToMinecraft {
             }
         }
     }
-    private void applyWaterWays() {
+    private void applyWaterWays(boolean[][] roadPlacements) {
         LOGGER.debug("Adding waterways");
         ArrayList<Waterway> valid_waterways = this.waterways.stream()
                 .filter(waterway -> waterway.polygon().intersects(blocks.getMinX(),blocks.getMinY(), blocks.getWidth(), blocks.getLength()))
@@ -89,11 +89,11 @@ public class OsmFeaturesToMinecraft {
             for (int y = 0; y < blocks.getLength(); y++) {
                 Waterway waterway = findFeatureAtCoordinate(x, y, valid_waterways);
                 if (waterway == null) continue;
-                fillWater(x, y, groundLayer, waterway.block());
+                fillWater(x, y, groundLayer, waterway.block(), roadPlacements);
             }
         }
     }
-    private void fillWater(int xo, int yo, GroundLayer groundLayer, Block waterBlock) {
+    private void fillWater(int xo, int yo, GroundLayer groundLayer, Block waterBlock, boolean[][] roadPlacements) {
         int radius = 5;
 
         int minZ = Integer.MAX_VALUE;
@@ -105,6 +105,9 @@ public class OsmFeaturesToMinecraft {
             for (int y = yo-radius; y <= yo+radius; y++) {
                 if (!groundLayer.inRange(x,y)) continue;
                 XYZBlock i = groundLayer.getXYZBlock(x,y);
+                if (roadPlacements[x][y]) {
+                    return; //not filling anything
+                }
 
                 if (i.z() < minZ) {
                     minZ2 = minZ;
@@ -130,17 +133,15 @@ public class OsmFeaturesToMinecraft {
                 }
             }
         }
+        if (bottomLayer2.size() > bottomLayer.size()) {
+            bottomLayer.addAll(bottomLayer2);
+        }
+
         for (XYZBlock XYZBlock : bottomLayer) {
             blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, waterBlock);
         }
-        //also the second layer
-        if (bottomLayer2.size() > bottomLayer.size()) {
-            for (XYZBlock XYZBlock : bottomLayer2) {
-                blocks.set(XYZBlock.x(), XYZBlock.y(), minZ+1, waterBlock);
-            }
-        }
     }
-    private void applyRoads() {
+    private void applyRoads(boolean[][] roadPlacements) {
         LOGGER.debug("Adding roads");
         ArrayList<Road> valid_roads = this.roads.stream()
                 .filter(road -> road.polygon().intersects(blocks.getMinX(),blocks.getMinY(), blocks.getWidth(), blocks.getLength()))
@@ -159,22 +160,25 @@ public class OsmFeaturesToMinecraft {
                     if (b == null) continue;
                     if (shouldReplace(b)) {
                         blocks.set(x,y,z, road.block());
+                        roadPlacements[x][y] = true;
 
                         roadHeight[x][y] = z;
                     }
                 }
             }
         }
+        //removing any plants above the roads. This way you can actually walk in the forest paths
         GroundLayer groundLayer = blocks.getGroundLayer();
         for (int x = 0; x < blocks.getWidth(); x++) {
             for (int y = 0; y < blocks.getLength(); y++) {
                 Road road = roadsAtCoordinate[x][y];
                 if (road == null) continue;
-
+                //the roads count as built area so if there is a road in the middle of a grass area, only some of the
+                //"asphalt" blocks will be replaced by the road. We replace the "asphalt" blocks with grass
                 removeBuiltAreaAroundRoad(x,y, groundLayer, roadsAtCoordinate);
+
                 int averageHeight = roadHeight[x][y];
                 if (averageHeight == 0) averageHeight = averageGroundHeight( x-10,y-10,x+10,y+10);
-                //for (int z = 0; z <= averageHeight; z++) blocks.setBlock(x,y,z,road.getBlock());
                 for (int z = averageHeight; z < averageHeight+6; z++) {
                     Block block = blocks.get(x,y,z);
                     if (block == null) continue;

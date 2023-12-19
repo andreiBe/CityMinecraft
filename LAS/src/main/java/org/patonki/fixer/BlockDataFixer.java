@@ -310,16 +310,15 @@ public class BlockDataFixer {
         }
     }
 
-    private void addIfValid(int x, int y, int z, Queue<ClassifiedCoordinate> q) {
+    private void extendWaterIfValid(int x, int y, int z, Queue<ClassifiedCoordinate> q) {
         if (!blocks.inRange(x,y,z)) return;
 
         Block block = blocks.get(x, y, z);
         //only replace air and plants
-        if (block != null && !block.classification().isPlant()) return;
-
-        q.add(new ClassifiedCoordinate(x,y,z, block == null ? null : block.classification()));
+        if (block == null || block.classification().isPlant()) {
+            q.add(new ClassifiedCoordinate(x,y,z, block == null ? null : block.classification()));
+        }
     }
-
     //the lidar laser is bad at detecting water so water may have holes in it
     //Flood fill algorithm: https://en.wikipedia.org/wiki/Flood_fill
     private void floodWater() {
@@ -328,16 +327,23 @@ public class BlockDataFixer {
         HashSet<ClassifiedCoordinate> visited = new HashSet<>();
         Queue<ClassifiedCoordinate> q = new LinkedList<>();
         XYZBlock[][] ground = blocks.getGroundLayerIncomplete();
-
         for (Iterator<XYZBlock> it = blocks.getIterator(false); it.hasNext(); ) {
             XYZBlock block = it.next();
             if (block.block().classification() != Classification.WATER) continue;
+
             q.add(new ClassifiedCoordinate(block));
+
+            int orgX = block.x();
+            int orgY = block.y();
+            int maxDistance = 20;
+
             while (!q.isEmpty()) {
                 ClassifiedCoordinate n = q.poll();
                 if (visited.contains(n)) continue;
                 visited.add(n);
+                if (Math.abs(orgX - n.x) + Math.abs(orgY - n.y) > maxDistance) continue;
 
+                //ignore the block if it has water blocks under it
                 boolean ignore = false;
                 for (int z = n.z-1; z >= 0; z--) {
                     Block below = blocks.get(n.x, n.y, z);
@@ -350,17 +356,18 @@ public class BlockDataFixer {
 
 
                 var highestGroundPoint = ground[n.x][n.y];
-
-                if (highestGroundPoint != null && highestGroundPoint.block().classification() == Classification.GROUND && highestGroundPoint.z() > n.z)
+                //has ground above it
+                if (highestGroundPoint != null && highestGroundPoint.block().classification() == Classification.GROUND
+                        && highestGroundPoint.z() > n.z)
                     continue;
 
                 blocks.set(n.x, n.y, n.z, waterBlock);
 
                 amount++;
-                addIfValid(n.x - 1, n.y, n.z, q);
-                addIfValid(n.x + 1, n.y, n.z, q);
-                addIfValid(n.x, n.y - 1, n.z, q);
-                addIfValid(n.x, n.y + 1, n.z, q);
+                extendWaterIfValid(n.x - 1, n.y, n.z, q);
+                extendWaterIfValid(n.x + 1, n.y, n.z, q);
+                extendWaterIfValid(n.x, n.y - 1, n.z, q);
+                extendWaterIfValid(n.x, n.y + 1, n.z, q);
             }
 
         }

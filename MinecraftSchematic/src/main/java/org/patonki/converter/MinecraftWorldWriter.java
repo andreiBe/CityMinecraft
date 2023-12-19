@@ -13,24 +13,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
-public class MinecraftWorldWriter {
+public class MinecraftWorldWriter extends Thread{
     private static final Logger LOGGER = LogManager.getLogger(MinecraftWorldWriter.class);
     private final String absolutePathToResultingMinecraftWorld;
     private final int minimumXCoordinateOfAllAreas;
     private final int minimumYCoordinateOfAllAreas;
-    private final ReentrantLock lock = new ReentrantLock();
 
     private final static int SCHEMATICS_AT_ONCE = 10;
-    private final ArrayBlockingQueue<String> schematics = new ArrayBlockingQueue<>(SCHEMATICS_AT_ONCE);
+    private final ArrayBlockingQueue<String> schematics;
     private static boolean pythonPackagesInstalled = false;
 
-    public MinecraftWorldWriter(String absolutePathToResultingMinecraftWorld, int minimumXCoordinateOfAllAreas, int minimumYCoordinateOfAllAreas) {
+    private final int totalNumberOfSchematics;
+    private int processedSchematics = 0;
+
+    public MinecraftWorldWriter(String absolutePathToResultingMinecraftWorld, int minimumXCoordinateOfAllAreas, int minimumYCoordinateOfAllAreas, int totalNumberOfSchematics) {
         this.absolutePathToResultingMinecraftWorld = absolutePathToResultingMinecraftWorld;
         this.minimumXCoordinateOfAllAreas = minimumXCoordinateOfAllAreas;
         this.minimumYCoordinateOfAllAreas = minimumYCoordinateOfAllAreas;
+        this.totalNumberOfSchematics = totalNumberOfSchematics;
+        this.schematics = new ArrayBlockingQueue<>(totalNumberOfSchematics);
     }
 
     private void installPythonPackages() {
@@ -106,45 +109,49 @@ public class MinecraftWorldWriter {
         p.waitFor(); //waiting for the python script to finish working
     }
 
+    @Override
+    public void run() {
+        while (processedSchematics < totalNumberOfSchematics) {
+            //writing a maximum of x schematics in the world at once
+            //this is done because the python script would run out of memory otherwise
+            installPythonPackages();
+
+            try {
+                ArrayList<String> files = new ArrayList<>();
+                files.add(schematics.take());
+
+                while (!schematics.isEmpty() && files.size() < SCHEMATICS_AT_ONCE) {
+                    files.add(schematics.poll());
+                }
+                processedSchematics += files.size();
+
+                LOGGER.warn("Thread " + Thread.currentThread().getName() +
+                        " is writing to the minecraft world. Schematic count:" + files.size() + " " + processedSchematics + "/" + totalNumberOfSchematics);
+
+                String command = "python python/main.py"
+                        + " " + String.join(",", files)
+                        + " " + absolutePathToResultingMinecraftWorld
+                        + " " + minimumXCoordinateOfAllAreas
+                        + " " + minimumYCoordinateOfAllAreas;
+                runCommandLineCommand(command);
+            }
+            catch (InterruptedException | IOException e) {
+                LOGGER.error("Error while writing the minecraft world", e);
+            }
+        }
+
+    }
+
     /**
      * Writes the schematic to the minecraft world at {@link #absolutePathToResultingMinecraftWorld}
      *
      * @param schematicFilename path to the .schematic file
-     * @throws IOException if the writing fails
      */
-    public void writeSchematicToWorld(String schematicFilename) throws IOException {
-        LOGGER.debug("Thread " + Thread.currentThread().getName() + " waiting to write to the minecraft world");
+    public void writeSchematicToWorld(String schematicFilename) {
         try {
-            //writing a maximum of x schematics in the world at once
-            //this is done because the python script would run out of memory otherwise
             schematics.put(schematicFilename); //this call will block if the queue is full
-
-            installPythonPackages();
-            try {
-                LOGGER.debug("Thread " + Thread.currentThread().getName() + " waiting to write to the minecraft world");
-                lock.lock();
-                int number = 0;
-                ArrayList<String> files = new ArrayList<>();
-                while (!schematics.isEmpty() && number++ < SCHEMATICS_AT_ONCE) {
-                    files.add(schematics.poll());
-                }
-                if (!files.isEmpty()) {
-                    LOGGER.debug("Thread " + Thread.currentThread().getName() + " is writing to the minecraft world. Schematic count:" + files.size());
-
-                    String command = "python python/main.py"
-                            + " " + String.join(",", files)
-                            + " " + absolutePathToResultingMinecraftWorld
-                            + " " + minimumXCoordinateOfAllAreas
-                            + " " + minimumYCoordinateOfAllAreas;
-                    runCommandLineCommand(command);
-                }
-            } finally {
-                lock.unlock();
-            }
-
         } catch (InterruptedException e) {
-            LOGGER.error("Thread interrupted exception while writing the minecraft world!");
-            throw new IOException(e);
+            LOGGER.error("Thread interrupted while trying to write to the minecraft world!", e);
         }
     }
 }

@@ -159,8 +159,9 @@ public class WorldBuilder {
         MinecraftWorldWriter writer = null;
         if (endStep.number > ExecutionStep.SCHEMATIC.number) {
             MinCoordinates minCoordinates = findMinimumCoordinates(files);
-            writer = new MinecraftWorldWriter(absolutePathToResultingMinecraftWorld, minCoordinates.x(), minCoordinates.y());
+            writer = new MinecraftWorldWriter(absolutePathToResultingMinecraftWorld, minCoordinates.x(), minCoordinates.y(), files.length);
             writer.copyTemplateWorld(templateMinecraftWorldPath);
+            writer.start();
         }
         boolean multiThreadBuildings = files.length == 1;
         final var finalWriter = writer;
