@@ -3,7 +3,10 @@
 Program to generate the city of Turku in minecraft using open data from multiple sources
 including open data offered by Turku and OpenStreetMap.
 
-Download the minecraft bedrock version world at: https://drive.google.com/file/d/1Qn2Pw4qE-WR65CFAVc2XH8QotwLgVVCc/view?usp=sharing
+Download the minecraft bedrock version world at: https://drive.google.com/file/d/1ANYLMlJxY1Xfg4vZFJR9dnkfz1F-MEdv/view?usp=sharing
+
+Java version world: https://drive.google.com/file/d/1hzzTfAduNJWQHlPH9cQlYsKtgz6Sz8sd/view?usp=sharing
+ 
 ![View of the city](imgs/example.png)
 
 The program uses a combination of lidar data and vector based data to build the Minecraft city.
