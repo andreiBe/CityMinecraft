@@ -205,10 +205,14 @@ public class WorldBuilder {
                     }
                 }
             }
+            if (writer != null)
+                writer.join();
+
         } catch (InterruptedException e) {
             LOGGER.error("Thread interrupted error!");
             LOGGER.error(e);
         }
+
         if (copyToMinecraft && writer != null) {
             writer.copyWorldToMinecraftWorldsFolder();
         }
